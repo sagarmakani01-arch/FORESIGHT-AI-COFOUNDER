@@ -1,0 +1,501 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Auth & Users
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  avatar        String?
+  role          UserRole  @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  company       Company?
+  onboarding    Onboarding?
+  conversations Conversation[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum CompanyStage {
+  IDEA
+  PRE_SEED
+  SEED
+  SERIES_A
+  SERIES_B
+  SERIES_C
+  GROWTH
+  EXIT
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  REVIEW
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+  BLOCKED
+}
+
+enum DocumentFolder {
+  STRATEGY
+  FINANCE
+  LEGAL
+  PRODUCT
+  MARKETING
+  OPERATIONS
+  HR
+  OTHER
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+enum FinanceType {
+  REVENUE
+  EXPENSE
+  INVESTMENT
+  LOAN
+}
+
+enum FinanceCategory {
+  SALARY
+  MARKETING
+  INFRASTRUCTURE
+  OPERATIONS
+  LEGAL
+  SALES
+  RD
+  OFFICE
+  OTHER
+}
+
+enum InvestorStatus {
+  PROSPECTING
+  CONTACTED
+  MEETING_SCHEDULED
+  DUE_DILIGENCE
+  TERM_SHEET
+  CLOSED
+  PASSED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// Company & Onboarding
+model Company {
+  id             String        @id @default(cuid())
+  name           String
+  industry       String
+  stage          CompanyStage  @default(IDEA)
+  vision         String        @db.Text
+  mission        String        @db.Text
+  description    String        @db.Text
+  website        String?
+  logoUrl        String?
+  location       String?
+  teamSize       Int           @default(1)
+  foundedDate    DateTime?
+  targetMarket   String?       @db.Text
+  businessModel  String?       @db.Text
+  revenueStreams String[]
+  fundingStatus  String?       @db.Text
+  monthlyBurn    Float?
+  runway         Int?
+  keyMetrics     String[]
+  challenges     String[]
+  goals          String[]
+  userId         String        @unique
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects       Project[]
+  documents      Document[]
+  milestones     Milestone[]
+  financeEntries FinanceEntry[]
+  competitors    Competitor[]
+  investors      Investor[]
+  roadmaps       Roadmap[]
+  conversations  Conversation[]
+
+  @@map("companies")
+}
+
+model Onboarding {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  completed Boolean  @default(false)
+  step      Int      @default(0)
+  data      Json     @db.JsonB
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboardings")
+}
+
+// Projects & Tasks
+model Project {
+  id          String        @id @default(cuid())
+  name        String
+  description String        @db.Text
+  status      ProjectStatus @default(PLANNING)
+  priority    Priority      @default(MEDIUM)
+  deadline    DateTime?
+  companyId   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@index([companyId])
+  @@map("projects")
+}
+
+model Task {
+  id           String     @id @default(cuid())
+  title        String
+  description  String     @db.Text
+  status       TaskStatus @default(TODO)
+  priority     Priority   @default(MEDIUM)
+  assigneeId   String?
+  deadline     DateTime?
+  projectId    String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  project      Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  dependencies TaskDependency[] @relation("TaskDependencies")
+  dependents   TaskDependency[] @relation("TaskDependents")
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@map("tasks")
+}
+
+model TaskDependency {
+  id          String @id @default(cuid())
+  taskId      String
+  dependsOnId String
+
+  task      Task @relation("TaskDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn Task @relation("TaskDependents", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+  @@map("task_dependencies")
+}
+
+// Documents
+model Document {
+  id        String         @id @default(cuid())
+  title     String
+  content   String         @db.Text
+  folder    DocumentFolder @default(OTHER)
+  companyId String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  company  Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  versions DocumentVersion[]
+
+  @@index([companyId])
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id         String   @id @default(cuid())
+  documentId String
+  content    String   @db.Text
+  version    Int
+  createdAt  DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@map("document_versions")
+}
+
+// AI Conversations
+model Conversation {
+  id        String    @id @default(cuid())
+  title     String?
+  userId    String
+  companyId String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company  Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  role           MessageRole
+  content        String      @db.Text
+  reasoningSteps Json?
+  conversationId String
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// Competitors
+model Competitor {
+  id          String   @id @default(cuid())
+  name        String
+  industry    String
+  website     String?
+  features    String[]
+  pricing     String?  @db.Text
+  strengths   String[]
+  weaknesses  String[]
+  funding     String?
+  traffic     String?
+  reviews     String?
+  lastUpdated DateTime @default(now())
+  companyId   String
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("competitors")
+}
+
+// Milestones
+model Milestone {
+  id          String          @id @default(cuid())
+  title       String
+  description String          @db.Text
+  status      MilestoneStatus @default(PENDING)
+  deadline    DateTime
+  progress    Int             @default(0)
+  companyId   String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("milestones")
+}
+
+// Finance
+model FinanceEntry {
+  id          String          @id @default(cuid())
+  type        FinanceType
+  amount      Float
+  category    FinanceCategory
+  date        DateTime
+  description String
+  companyId   String
+  createdAt   DateTime        @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, date])
+  @@index([companyId, type])
+  @@map("finance_entries")
+}
+
+// Investors
+model Investor {
+  id          String        @id @default(cuid())
+  name        String
+  firm        String
+  stage       CompanyStage
+  status      InvestorStatus @default(PROSPECTING)
+  email       String?
+  phone       String?
+  notes       String?       @db.Text
+  lastContact DateTime?
+  companyId   String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("investors")
+}
+
+// Roadmaps
+model Roadmap {
+  id        String   @id @default(cuid())
+  title     String
+  startDate DateTime
+  endDate   DateTime
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  phases  RoadmapPhase[]
+
+  @@index([companyId])
+  @@map("roadmaps")
+}
+
+model RoadmapPhase {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  startDate   DateTime
+  endDate     DateTime
+  tasks       String[]
+  roadmapId   String
+  sortOrder   Int      @default(0)
+
+  roadmap Roadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@index([roadmapId])
+  @@map("roadmap_phases")
+}
+
+// Knowledge & Memory
+model KnowledgeEntry {
+  id        String   @id @default(cuid())
+  type      String
+  content   String   @db.Text
+  metadata  Json?
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([type])
+  @@map("knowledge_entries")
+}
+
+model Memory {
+  id        String   @id @default(cuid())
+  key       String
+  value     Json     @db.JsonB
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([key, companyId])
+  @@index([companyId])
+  @@map("memories")
+}
+
+// Research
+model ResearchReport {
+  id        String   @id @default(cuid())
+  title     String
+  query     String
+  content   String   @db.Text
+  category  String
+  sources   Json?
+  companyId String
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@index([category])
+  @@map("research_reports")
+}
+
+// Audit & Analytics
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String?
+  userId    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

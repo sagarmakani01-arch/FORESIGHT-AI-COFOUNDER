@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>GENESIS | Strategic Roadmap</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100;300;400;600;700;800&display=swap');
+        
+        body {
+            background-color: #050505;
+            color: #e5e2e1;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .shadow-violet-glow {
+            box-shadow: 0 0 20px rgba(78, 222, 163, 0.15), 0 0 40px rgba(0, 165, 114, 0.05);
+        }
+
+        .glass-panel {
+            background: rgba(26, 26, 26, 0.7);
+            backdrop-filter: blur(24px);
+            border: 0.5px solid rgba(229, 226, 225, 0.1);
+        }
+
+        .timeline-line {
+            background: linear-gradient(to bottom, #10B981 0%, transparent 100%);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .emerald-glow {
+            filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4));
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#8e9192",
+                        "secondary-container": "#00a572",
+                        "surface-container-highest": "#353535",
+                        "on-surface-variant": "#c4c7c7",
+                        "surface-tint": "#c9c6c5",
+                        "secondary": "#4edea3",
+                        "on-tertiary": "#313030",
+                        "primary-fixed-dim": "#c9c6c5",
+                        "tertiary": "#c8c6c5",
+                        "surface-container-low": "#1c1b1b",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#6ffbbe",
+                        "inverse-primary": "#5f5e5e",
+                        "surface-container-lowest": "#0e0e0e",
+                        "surface-container-high": "#2a2a2a",
+                        "on-background": "#e5e2e1",
+                        "on-primary-container": "#797777",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#050505",
+                        "on-secondary": "#003824",
+                        "background": "#131313",
+                        "secondary-fixed-dim": "#4edea3",
+                        "tertiary-container": "#050505",
+                        "primary-fixed": "#e5e2e1",
+                        "on-primary": "#313030",
+                        "on-tertiary-container": "#787776",
+                        "on-primary-fixed": "#1c1b1b",
+                        "tertiary-fixed": "#e5e2e1",
+                        "on-secondary-fixed": "#002113",
+                        "surface-variant": "#353535",
+                        "surface": "#131313",
+                        "on-surface": "#e5e2e1",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "outline-variant": "#444748",
+                        "error": "#ffb4ab",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "primary": "#c9c6c5",
+                        "surface-container": "#20201f",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "surface-bright": "#393939",
+                        "on-secondary-container": "#00311f",
+                        "inverse-on-surface": "#313030",
+                        "surface-dim": "#131313",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#474646",
+                        "inverse-surface": "#e5e2e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "stack-sm": "12px",
+                        "unit": "8px",
+                        "stack-lg": "48px",
+                        "stack-md": "24px",
+                        "margin-mobile": "20px",
+                        "container-max": "1280px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Geist"],
+                        "body-lg": ["Geist"],
+                        "display-lg-mobile": ["Geist"],
+                        "display-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "label-caps": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "1", "letterSpacing": "0.1em", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface-container-lowest font-body-md text-on-surface">
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-3xl bg-surface-glass border-b border-border-glass">
+<div class="flex justify-between items-center px-margin-mobile md:px-margin-desktop h-16 w-full max-w-container-max mx-auto">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-primary" data-icon="menu">menu</span>
+<span class="font-display text-headline-md md:text-display-lg font-bold text-primary tracking-tighter uppercase">GENESIS</span>
+</div>
+<div class="hidden md:flex gap-stack-md">
+<nav class="flex gap-8">
+<a class="font-label-caps text-label-caps text-primary tracking-widest transition-colors duration-300" href="#">STRATEGY</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary tracking-widest transition-colors duration-300" href="#">MARKET</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary tracking-widest transition-colors duration-300" href="#">INTEL</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full border border-primary/20 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A cinematic, ultra-high-definition portrait of a sophisticated tech executive, captured in soft, dramatic top-lighting. The scene is set in a dark, minimalist executive office with deep black surfaces and subtle chrome accents. The color palette is restricted to matte blacks, charcoal grays, and a single emerald green light source reflecting in the background. The mood is powerful, focused, and luxurious." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDHwhzjVDyN8xNjuXQX1ndItr_Shk1lNrZVWynj2rq-EMBbn3b-fR3Fd8PG2AV6U9XUOyNXW7mUUsdm0v-shO_r_pPA9m_fFmXFwrVcVxjvUQU_Hh-itsgzDxIe-OoNKnRVD2wk08vo3HtfAzxNYMECld5YGruTX428Htgs4OSRuEQgz2YoIGyYObGezBtJiXRiouV61Ld5PFjQ3ItzM8wW18n3J9IDeOK6YeGhzfByHTq4zypFrSOSmt5j3cLbJvkyeKreDkPGEcZL"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="relative pt-32 pb-64 overflow-hidden">
+<!-- Background Animation Layer -->
+<div class="fixed inset-0 -z-10 opacity-20 pointer-events-none">
+
+</div>
+<section class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
+<!-- Header Section -->
+<div class="mb-stack-lg border-l-4 border-secondary pl-gutter">
+<p class="font-label-caps text-label-caps text-secondary mb-unit">OPERATIONAL HORIZON 2025</p>
+<h1 class="font-display text-display-lg-mobile md:text-display-lg text-on-surface mb-stack-sm max-w-2xl leading-none">
+                    Strategic Roadmap <br/>&amp; Market Sovereignty
+                </h1>
+<p class="font-body-lg text-on-surface-variant max-w-xl opacity-80">
+                    A multi-phase architecture designed to leverage proprietary AI models for autonomous market positioning and rapid scale expansion.
+                </p>
+</div>
+<!-- Timeline Structure -->
+<div class="relative mt-32">
+<!-- Central Timeline Line -->
+<div class="absolute left-0 md:left-1/2 top-0 bottom-0 w-px bg-outline/20 -translate-x-1/2 hidden md:block"></div>
+<div class="absolute left-4 top-0 bottom-0 w-px timeline-line md:hidden"></div>
+<!-- Milestone 01 -->
+<div class="relative grid grid-cols-1 md:grid-cols-2 gap-gutter mb-64 group">
+<div class="md:pr-16 text-right hidden md:block self-center">
+<span class="font-display text-[120px] font-black text-white/5 select-none leading-none">01</span>
+</div>
+<div class="relative z-10">
+<!-- Floating Annotation -->
+<div class="absolute -top-12 -right-8 md:-left-24 z-20 animate-float">
+<div class="glass-panel p-4 rounded-xl border-secondary/30 emerald-glow">
+<div class="flex items-center gap-2 text-secondary font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-sm" data-icon="auto_awesome">auto_awesome</span>
+                                    AI STRATEGIC SHIFT
+                                </div>
+<p class="text-[12px] mt-1 text-on-surface leading-tight font-medium max-w-[180px]">
+                                    Pivot Q1 resources toward synthetic data generation.
+                                </p>
+</div>
+</div>
+<div class="glass-panel p-stack-lg rounded-none relative">
+<div class="flex items-center gap-3 mb-stack-md">
+<span class="px-3 py-1 border border-secondary/40 text-secondary font-label-caps text-[10px]">PHASE: INCEPTION</span>
+<span class="text-on-surface-variant font-label-caps text-[10px]">Q1 — JAN 2025</span>
+</div>
+<h2 class="font-headline-md text-on-surface mb-stack-sm">The Foundation Layer</h2>
+<p class="font-body-md text-on-surface-variant mb-stack-md opacity-90 leading-relaxed">
+                                Establish the core infrastructure for the Genesis Network. This phase focuses on zero-latency data pipelines and the integration of the first-party neural engine.
+                            </p>
+<div class="h-64 mb-stack-md overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" data-alt="A hyper-realistic close-up of high-end server architecture in a dark data center. The servers are sleek, matte black with subtle emerald green status lights. The lighting is low-key, emphasizing the precision-engineered textures of carbon fiber and brushed titanium. The scene feels futuristic, powerful, and whisper-quiet, capturing the essence of high-status technology." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgdrYwLDixnbYD_JY1JODfOgxSGqft3grvXu9W7bfGCZt3VcpQIqgjW2v1HKz5W8FvKcuBWCAf5Db5lCXOfdQ8kKUs1V_DSSqVXi5oGJJDKVP1KSzkrePkNrsJz-OiH2ZWGa_34bnj4YhP67Bx0Mt1hNuGzgN4PEcrJw8XvmC4fidBn6QJcW1Q_z5_z3iDsyxAvPeJr4l57KauuTH_V7Xs2ZcCB0Yl3wwZq1vtN-XnKIWGCTWvlqqrym4tx0PtYD3JAtEFFlIJaPvK"/>
+</div>
+<ul class="space-y-4 pt-4 border-t border-white/5">
+<li class="flex items-center gap-4 text-on-surface/80 group-hover:text-secondary transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_circle">check_circle</span>
+<span class="text-label-caps">Neural Pipeline Integration</span>
+</li>
+<li class="flex items-center gap-4 text-on-surface/80">
+<span class="material-symbols-outlined text-[18px]" data-icon="radio_button_unchecked">radio_button_unchecked</span>
+<span class="text-label-caps">Node Sovereignty Protocol</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Milestone 02 -->
+<div class="relative grid grid-cols-1 md:grid-cols-2 gap-gutter mb-64 group">
+<div class="order-2 md:order-1 relative z-10">
+<div class="glass-panel p-stack-lg rounded-none">
+<div class="flex items-center gap-3 mb-stack-md">
+<span class="px-3 py-1 border border-secondary/40 text-secondary font-label-caps text-[10px]">PHASE: ACCELERATION</span>
+<span class="text-on-surface-variant font-label-caps text-[10px]">Q2 — APR 2025</span>
+</div>
+<h2 class="font-headline-md text-on-surface mb-stack-sm">Market Liquidity Engine</h2>
+<p class="font-body-md text-on-surface-variant mb-stack-md opacity-90 leading-relaxed">
+                                Deployment of autonomous trading algorithms and cross-border settlement layers. The Genesis engine begins real-world stress testing under high-volatility conditions.
+                            </p>
+<div class="h-64 mb-stack-md overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" data-alt="An abstract visualization of complex financial data flowing through a dark space. The data is represented by ultra-thin, sharp lines of light in emerald green and pure white, forming crystalline geometric structures. The background is a deep, void-like black with subtle ambient occlusion. The aesthetic is clean, sophisticated, and editorial, resembling a high-end financial journal illustration." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt3xNZmMxY0mljEvHpgzoLLk83ns7xxY0-bIDmPpHEuC94KF5-bUgJr2ePNmqotR9Wo8YvmYIn6qKDcqOIHm96EMnLfv7fBcpPegMyz3o3GlkaFlVZ6ha6E19u8gpSOf__S31BMLvNGCYbx00S2vHUMG32A-A0tIS9hF3LahKBw3RlEvkyqw5IFy86MmmPmbN1GFlvsce3jACzs8LmX93TOBSrF_ALPdDTTuBnr1W4jSCjK2NHusfmsrIScgBq5Lm3EOJCryDwflY7"/>
+</div>
+<div class="p-4 bg-secondary/5 border-l-2 border-secondary mb-stack-md">
+<p class="text-[13px] font-medium text-secondary italic">"Projected ROI increased by 14.2% based on current model refinements."</p>
+</div>
+</div>
+</div>
+<div class="order-1 md:order-2 md:pl-16 text-left hidden md:block self-center">
+<span class="font-display text-[120px] font-black text-white/5 select-none leading-none">02</span>
+</div>
+</div>
+<!-- Milestone 03 -->
+<div class="relative grid grid-cols-1 md:grid-cols-2 gap-gutter group">
+<div class="md:pr-16 text-right hidden md:block self-center">
+<span class="font-display text-[120px] font-black text-white/5 select-none leading-none">03</span>
+</div>
+<div class="relative z-10">
+<!-- Floating Annotation -->
+<div class="absolute -top-12 right-0 md:-right-32 z-20 animate-float" style="animation-delay: 2s;">
+<div class="glass-panel p-4 rounded-xl border-secondary/30 emerald-glow">
+<div class="flex items-center gap-2 text-secondary font-label-caps text-[10px]">
+<span class="material-symbols-outlined text-sm" data-icon="bolt">bolt</span>
+                                    CRITICAL MILESTONE
+                                </div>
+<p class="text-[12px] mt-1 text-on-surface leading-tight font-medium max-w-[180px]">
+                                    Global Node Synchronization achieved.
+                                </p>
+</div>
+</div>
+<div class="glass-panel p-stack-lg rounded-none">
+<div class="flex items-center gap-3 mb-stack-md">
+<span class="px-3 py-1 border border-secondary/40 text-secondary font-label-caps text-[10px]">PHASE: DOMINANCE</span>
+<span class="text-on-surface-variant font-label-caps text-[10px]">Q4 — OCT 2025</span>
+</div>
+<h2 class="font-headline-md text-on-surface mb-stack-sm">Global Genesis Core</h2>
+<p class="font-body-md text-on-surface-variant mb-stack-md opacity-90 leading-relaxed">
+                                The full realization of the Genesis ecosystem. Integration of decentralized governance models and global liquidity pools, marking the shift to full market sovereignty.
+                            </p>
+<div class="h-64 mb-stack-md overflow-hidden border border-white/10">
+<img class="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700" data-alt="A wide-angle, cinematic view of a futuristic global command center. The room is filled with large, transparent glass displays showing intricate holographic maps and data streams in emerald and white. The room is mostly in shadows, with light only coming from the screens. A single, high-status executive is silhouetted against the glowing data. The style is ultra-minimalist, moody, and prestigious." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4-xS0Zrw1YwnIRRm1H0JSqQLPzrYyVzvQ_GtX2B2ed2jnuG3AbFniEFqh-gGqMRJ_G93YCfgqVwSWZ06_Ec5JRvXowj5Xdf1zyinDrG9ip9BAtWF9u41uO8D4ZTNkw4GEO1z5nAdH7nz18Rg7xQemX8ZXWeaW5LuKWmqszsdfgwy8u40wstWykyhymkTThZBFu52Pcc6GE3lQ8O8YAFoFUfx6FsqQKUMSLa66KF4Ckw043NSrXIctn9yxtBzLAfmBqYcpqOW4dxPy"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Side Navigation / Drawer (Contextual) -->
+<div class="fixed inset-y-0 right-0 w-80 h-full glass-panel shadow-2xl translate-x-full transition-transform duration-500 ease-out z-[60]" id="drawer">
+<div class="flex flex-col h-full p-stack-md">
+<div class="flex items-center gap-4 mb-stack-lg">
+<div class="w-12 h-12 rounded-full border border-primary/20 bg-primary/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="account_circle">account_circle</span>
+</div>
+<div>
+<p class="font-display text-headline-md text-primary leading-none uppercase tracking-tighter">EXECUTIVE TERMINAL</p>
+<p class="font-label-caps text-[10px] text-secondary">STRATEGIC MODE ACTIVE</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-4 p-4 text-primary bg-surface-variant/50 font-bold border-r-2 border-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="lightbulb">lightbulb</span>
+<span class="text-body-md uppercase tracking-wider">Insights</span>
+</a>
+<a class="flex items-center gap-4 p-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/20 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="task_alt">task_alt</span>
+<span class="text-body-md uppercase tracking-wider">Action Items</span>
+</a>
+<a class="flex items-center gap-4 p-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/20 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="trending_up">trending_up</span>
+<span class="text-body-md uppercase tracking-wider">Market Pulse</span>
+</a>
+<a class="flex items-center gap-4 p-4 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright/20 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="inventory_2">inventory_2</span>
+<span class="text-body-md uppercase tracking-wider">Resources</span>
+</a>
+</nav>
+<div class="mt-auto pt-stack-md border-t border-white/5">
+<p class="font-label-caps text-[10px] text-on-surface-variant/50">v1.0.4-genesis</p>
+</div>
+</div>
+</div>
+<!-- Bottom Navigation (Mobile) -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] rounded-full backdrop-blur-3xl bg-surface-glass border border-border-glass shadow-violet-glow md:hidden z-50">
+<div class="flex justify-around items-center py-2 px-4 w-full">
+<button class="flex items-center justify-center text-primary bg-primary/10 rounded-full w-12 h-12 shadow-violet-glow">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+</button>
+<button class="flex items-center justify-center text-on-surface-variant w-12 h-12 hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="architecture">architecture</span>
+</button>
+<button class="flex items-center justify-center text-on-surface-variant w-12 h-12 hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="chat_bubble">chat_bubble</span>
+</button>
+<button class="flex items-center justify-center text-on-surface-variant w-12 h-12 hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="search_insights">search_insights</span>
+</button>
+<button class="flex items-center justify-center text-on-surface-variant w-12 h-12 hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="grid_view">grid_view</span>
+</button>
+</div>
+</div>
+<script>
+        // Simple Interaction logic
+        const menuBtn = document.querySelector('[data-icon="menu"]');
+        const drawer = document.getElementById('drawer');
+        
+        let isOpen = false;
+        menuBtn.addEventListener('click', () => {
+            isOpen = !isOpen;
+            if(isOpen) {
+                drawer.classList.remove('translate-x-full');
+            } else {
+                drawer.classList.add('translate-x-full');
+            }
+        });
+
+        // Close drawer on click outside
+        document.addEventListener('click', (e) => {
+            if (isOpen && !drawer.contains(e.target) && !menuBtn.contains(e.target)) {
+                isOpen = false;
+                drawer.classList.add('translate-x-full');
+            }
+        });
+
+        // Micro-interaction for scroll
+        window.addEventListener('scroll', () => {
+            const opacity = Math.min(0.8, window.scrollY / 500);
+            document.querySelector('header').style.backgroundColor = `rgba(19, 19, 19, ${opacity})`;
+        });
+    </script>
+</body></html>

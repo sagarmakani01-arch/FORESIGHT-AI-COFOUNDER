@@ -1,0 +1,84 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: genesis-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - genesis-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: genesis-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: genesis
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: genesis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U genesis -d genesis_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - genesis-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: genesis-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - genesis-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: genesis-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@genesis.ai
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - genesis-network
+    profiles:
+      - tools
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  genesis-network:
+    driver: bridge
