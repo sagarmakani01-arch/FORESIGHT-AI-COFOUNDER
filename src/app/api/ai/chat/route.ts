@@ -1,10 +1,11 @@
+import { authOptions } from "@/lib/auth/config";
 import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { chatStream, type AIMessage } from "@/lib/ai/provider";
 
 async function getAuthUserId() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user) return null;
   return (session.user as { id: string }).id;
 }
@@ -82,9 +83,10 @@ export async function POST(request: NextRequest) {
     ];
 
     const stream = await chatStream(aiMessages, {
-      model: model || process.env.AI_MODEL || "llama3.2",
+      model: model || undefined,
       temperature: 0.7,
       maxTokens: 2048,
+      userId,
     });
 
     return new Response(stream, {

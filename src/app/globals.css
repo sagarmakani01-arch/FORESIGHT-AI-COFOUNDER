@@ -17,6 +17,23 @@
   --warning: #EAB308;
 }
 
+.dark {
+  --background: #0F0F0F;
+  --foreground: #F0F0F0;
+  --primary: #10B981;
+  --primary-hover: #34D399;
+  --surface: #1A1A1A;
+  --surface-container: #252525;
+  --muted: #2A2A2A;
+  --muted-foreground: #A0A0A0;
+  --border: #333333;
+  --border-strong: #444444;
+  --outline: #3A3A3A;
+  --destructive: #F87171;
+  --success: #4ADE80;
+  --warning: #FACC15;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -89,10 +106,30 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.bg-card { background-color: #FFFFFF; }
-.bg-card-hover { background-color: #F9FAFB; }
-.border-border { border-color: rgba(0, 0, 0, 0.08); }
-.border-border-hover { border-color: rgba(0, 0, 0, 0.15); }
+.bg-card { background-color: var(--surface); }
+.bg-card-hover { background-color: var(--surface-container); }
+.border-border { border-color: var(--border); }
+.border-border-hover { border-color: var(--border-strong); }
+
+.dark .thin-border {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: #1A1A1A;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-panel {
+  background: rgba(26, 26, 26, 0.9);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-strong {
+  background: #1A1A1A;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+}
 
 .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
 .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }

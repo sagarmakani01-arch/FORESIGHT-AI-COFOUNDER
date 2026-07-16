@@ -1,121 +1,147 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Plus, TrendingUp, Users, Eye, MousePointerClick, BarChart3, Calendar, Megaphone } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { cn } from "@/lib/utils";
+import { Plus, Megaphone } from "lucide-react";
 import PageHeader from "@/components/shared/page-header";
-
-const campaigns = [
-  { id: "1", name: "Google Ads - Merchant Acquisition", status: "active", budget: 18500, spent: 12400, leads: 342, conv: 12.5 },
-  { id: "2", name: "LinkedIn - Enterprise Outreach", status: "active", budget: 8000, spent: 5200, leads: 89, conv: 8.2 },
-  { id: "3", name: "Content Marketing - Blog + SEO", status: "active", budget: 5000, spent: 3800, leads: 560, conv: 4.8 },
-  { id: "4", name: "Referral Program Launch", status: "paused", budget: 10000, spent: 2100, leads: 128, conv: 18.3 },
-];
-
-const channelData = [
-  { name: "Google Ads", leads: 342, spend: 12400 },
-  { name: "LinkedIn", leads: 89, spend: 5200 },
-  { name: "SEO/Content", leads: 560, spend: 3800 },
-  { name: "Referrals", leads: 128, spend: 2100 },
-  { name: "Direct", leads: 95, spend: 0 },
-];
-
-const contentCalendar = [
-  { date: "Jul 15", title: "Blog: AI Credit Scoring Explained", type: "blog", status: "scheduled" },
-  { date: "Jul 18", title: "LinkedIn: Merchant Success Story", type: "social", status: "draft" },
-  { date: "Jul 20", title: "Newsletter: July Product Update", type: "email", status: "scheduled" },
-  { date: "Jul 22", title: "Twitter Thread: Fintech Trends", type: "social", status: "idea" },
-  { date: "Jul 25", title: "Blog: Emerging Markets Opportunity", type: "blog", status: "idea" },
-];
+import { useCompanyData } from "@/lib/hooks";
+import { Modal, FormField, inputClass, selectClass, SubmitButton } from "@/components/shared/modal";
 
 export default function MarketingPage() {
+  const { data, loading } = useCompanyData();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ name: "", type: "email", budget: "" });
+  const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string; type: string; status: string; budget: string }>>([]);
+  const [campaignsLoading, setCampaignsLoading] = useState(true);
+
+  async function fetchCampaigns() {
+    try {
+      const res = await fetch("/api/campaigns");
+      const json = await res.json();
+      if (json.success) setCampaigns(json.data);
+    } catch (err) {
+      console.error("Failed to fetch campaigns", err);
+    } finally {
+      setCampaignsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  if (loading || campaignsLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Marketing" description="Campaign management and performance tracking" />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-surface thin-border rounded-xl p-5 animate-pulse">
+              <div className="h-10 w-10 rounded-lg bg-surface-container" />
+              <div className="mt-4 space-y-2">
+                <div className="h-3 w-20 bg-surface-container rounded" />
+                <div className="h-6 w-16 bg-surface-container rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/campaigns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, type: form.type, budget: form.budget }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        await fetchCampaigns();
+        setForm({ name: "", type: "email", budget: "" });
+        setModalOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to create campaign", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader title="Marketing" description="Campaign management and performance tracking" actions={[
-        <button key="new" className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors font-medium text-sm"><Plus className="w-4 h-4" />New Campaign</button>,
+        <button key="new" onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors font-medium text-sm"><Plus className="w-4 h-4" />New Campaign</button>,
       ]} />
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Total Leads", value: "1,214", change: "+18.3%", icon: Users },
-          { label: "Conversion Rate", value: "9.7%", change: "+2.1%", icon: MousePointerClick },
-          { label: "Ad Spend", value: "$23,500", change: "-8.2%", icon: Megaphone },
-          { label: "Cost per Lead", value: "$19.36", change: "-12.5%", icon: TrendingUp },
-        ].map((stat, i) => (
-          <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} className="bg-surface thin-border rounded-xl p-5">
-            <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container"><stat.icon className="h-5 w-5 text-primary" /></div>
-              <span className="text-xs font-semibold text-primary">{stat.change}</span>
-            </div>
-            <div className="mt-4"><p className="type-label-caps text-on-surface-variant">{stat.label}</p><p className="mt-1 text-2xl font-bold text-on-surface">{stat.value}</p></div>
-          </motion.div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Channel Performance Chart */}
-        <div className="bg-surface thin-border rounded-xl p-6">
-          <h3 className="type-label-caps text-on-surface mb-4">Channel Performance</h3>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={channelData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-              <XAxis dataKey="name" stroke="#9CA3AF" fontSize={11} />
-              <YAxis stroke="#9CA3AF" fontSize={11} />
-              <Tooltip contentStyle={{ backgroundColor: "#FFFFFF", border: "0.5px solid rgba(0,0,0,0.08)", borderRadius: "12px", color: "#1A1A1A" }} />
-              <Bar dataKey="leads" fill="#10B981" radius={[4, 4, 0, 0]} name="Leads" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Content Calendar */}
-        <div className="bg-surface thin-border rounded-xl p-6">
-          <h3 className="type-label-caps text-on-surface mb-4 flex items-center gap-2"><Calendar className="w-4 h-4 text-primary" />Content Calendar</h3>
-          <div className="space-y-2">
-            {contentCalendar.map((item, i) => (
-              <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-surface-container-low">
-                <span className="text-xs font-medium text-on-surface-variant w-12 shrink-0">{item.date}</span>
-                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase shrink-0", item.type === "blog" ? "bg-primary-container text-primary" : item.type === "social" ? "bg-surface-container text-on-surface-variant" : "bg-surface-container text-on-surface-variant")}>{item.type}</span>
-                <span className="text-sm text-on-surface flex-1">{item.title}</span>
-                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", item.status === "scheduled" ? "bg-primary-container text-primary" : item.status === "draft" ? "bg-surface-container text-on-surface-variant" : "bg-surface-container text-muted-foreground")}>{item.status}</span>
-              </div>
-            ))}
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Campaign">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField label="Campaign Name" required>
+            <input className={inputClass} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Summer Sale 2026" required />
+          </FormField>
+          <FormField label="Type" required>
+            <select className={selectClass} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+              <option value="email">Email</option>
+              <option value="social">Social</option>
+              <option value="content">Content</option>
+              <option value="referral">Referral</option>
+              <option value="partnership">Partnership</option>
+            </select>
+          </FormField>
+          <FormField label="Budget">
+            <input className={inputClass} value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} placeholder="e.g. $5,000" />
+          </FormField>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
+            <SubmitButton loading={submitting}>Create Campaign</SubmitButton>
           </div>
-        </div>
-      </div>
+        </form>
+      </Modal>
 
-      {/* Campaigns Table */}
-      <div className="bg-surface thin-border rounded-xl p-6">
-        <h3 className="type-label-caps text-on-surface mb-4">Active Campaigns</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-outline-variant">
-                <th className="text-left px-4 py-3 type-label-caps text-on-surface-variant">Campaign</th>
-                <th className="text-left px-4 py-3 type-label-caps text-on-surface-variant">Budget</th>
-                <th className="text-left px-4 py-3 type-label-caps text-on-surface-variant">Spent</th>
-                <th className="text-left px-4 py-3 type-label-caps text-on-surface-variant">Leads</th>
-                <th className="text-left px-4 py-3 type-label-caps text-on-surface-variant">Conv.</th>
-                <th className="text-left px-4 py-3 type-label-caps text-on-surface-variant">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map((c) => (
-                <tr key={c.id} className="border-b border-outline-variant last:border-0">
-                  <td className="px-4 py-3 text-sm font-medium text-on-surface">{c.name}</td>
-                  <td className="px-4 py-3 text-sm text-on-surface">${c.budget.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-on-surface">${c.spent.toLocaleString()}</td>
-                  <td className="px-4 py-3 text-sm text-on-surface">{c.leads}</td>
-                  <td className="px-4 py-3 text-sm text-on-surface">{c.conv}%</td>
-                  <td className="px-4 py-3"><span className={cn("px-2 py-0.5 rounded-full text-xs font-medium", c.status === "active" ? "bg-primary-container text-primary" : "bg-surface-container text-on-surface-variant")}>{c.status}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {campaigns.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-24 text-center"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
+            <Megaphone className="w-8 h-8 text-primary" />
+          </div>
+          <h3 className="text-xl font-semibold text-on-surface mb-2">No campaigns yet</h3>
+          <p className="text-on-surface-variant max-w-md">
+            Create your first marketing campaign to track channels, measure performance, and manage your content calendar.
+          </p>
+          {data?.company && (
+            <p className="text-sm text-muted-foreground mt-4 max-w-lg">
+              Marketing for <span className="font-medium text-on-surface">{data.company.name}</span> — {data.company.industry}
+            </p>
+          )}
+        </motion.div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {campaigns.map((c) => (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-surface thin-border rounded-xl p-5"
+            >
+              <div className="flex items-start justify-between mb-3">
+                <h4 className="font-medium text-on-surface">{c.name}</h4>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-container text-primary">{c.status}</span>
+              </div>
+              <div className="space-y-1 text-xs text-on-surface-variant">
+                <p>Type: {c.type.charAt(0).toUpperCase() + c.type.slice(1)}</p>
+                {c.budget && <p>Budget: {c.budget}</p>}
+              </div>
+            </motion.div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

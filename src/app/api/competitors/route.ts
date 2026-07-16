@@ -1,9 +1,11 @@
+import { authOptions } from "@/lib/auth/config";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 async function getAuthUserId() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user) return null;
   return (session.user as { id: string }).id;
 }
@@ -96,6 +98,14 @@ export async function POST(request: NextRequest) {
         reviews: reviews || null,
         companyId,
       },
+    });
+
+    await logAudit({
+      action: "CREATE",
+      entity: "competitor",
+      entityId: competitor.id,
+      userId,
+      metadata: { name, industry },
     });
 
     return NextResponse.json(

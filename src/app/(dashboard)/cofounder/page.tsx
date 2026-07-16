@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, MessageSquare, Clock, MoreVertical, Sparkles } from "lucide-react";
+import { Plus, MessageSquare, Clock, MoreVertical, Sparkles, Trash2 } from "lucide-react";
 import { cn, generateId } from "@/lib/utils";
 import MessageBubble from "@/components/chat/message-bubble";
 import ReasoningDisplay from "@/components/chat/reasoning-display";
 import ChatInput from "@/components/chat/chat-input";
+import { useCompanyData } from "@/lib/hooks";
 
 interface Conversation {
   id: string;
-  title: string;
+  title: string | null;
   preview: string;
   timestamp: string;
   messages: Message[];
@@ -30,53 +31,50 @@ interface ReasoningStep {
   detail?: string;
 }
 
-const sampleConversations: Conversation[] = [
-  {
-    id: "1",
-    title: "Market Analysis for NexusPay",
-    preview: "Based on my research, the fintech market is projected to reach...",
-    timestamp: "2 hours ago",
-    messages: [],
-  },
-  {
-    id: "2",
-    title: "Competitor Intelligence Report",
-    preview: "After analyzing your top 6 competitors, I've identified...",
-    timestamp: "Yesterday",
-    messages: [],
-  },
-  {
-    id: "3",
-    title: "Financial Model - Year 1 Projections",
-    preview: "Here's a breakdown of your projected revenue streams...",
-    timestamp: "3 days ago",
-    messages: [],
-  },
-  {
-    id: "4",
-    title: "Pitch Deck Strategy",
-    preview: "For Series A, I recommend structuring your deck around...",
-    timestamp: "1 week ago",
-    messages: [],
-  },
-  {
-    id: "5",
-    title: "Product Roadmap Q3-Q4",
-    preview: "Let's prioritize features based on market demand and...",
-    timestamp: "2 weeks ago",
-    messages: [],
-  },
-];
+interface ApiConversation {
+  id: string;
+  title: string | null;
+  updatedAt: string;
+  messages: { content: string; createdAt: string }[];
+}
+
+interface ApiMessage {
+  id: string;
+  role: "USER" | "ASSISTANT" | "SYSTEM";
+  content: string;
+  reasoningSteps?: ReasoningStep[];
+  createdAt: string;
+}
+
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
 
 export default function CoFounderPage() {
-  const [conversations, setConversations] = useState<Conversation[]>(sampleConversations);
-  const [activeConversationId, setActiveConversationId] = useState<string>("1");
+  const { data } = useCompanyData();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [reasoningSteps, setReasoningSteps] = useState<ReasoningStep[]>([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const messages = activeConversation?.messages || [];
+
+  const userName = data?.user?.name?.split(" ")[0] ?? "there";
+  const companyName = data?.company?.name ?? "your company";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -85,6 +83,62 @@ export default function CoFounderPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, reasoningSteps]);
+
+  useEffect(() => {
+    async function loadConversations() {
+      try {
+        const res = await fetch("/api/conversations");
+        const json = await res.json();
+        if (json.success) {
+          const mapped: Conversation[] = json.data.map((c: ApiConversation) => ({
+            id: c.id,
+            title: c.title || "New Conversation",
+            preview: c.messages[0]?.content?.slice(0, 80) || "Start a new conversation...",
+            timestamp: formatTimestamp(c.updatedAt),
+            messages: [],
+          }));
+          setConversations(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load conversations:", err);
+      } finally {
+        setIsLoadingConversations(false);
+      }
+    }
+    loadConversations();
+  }, []);
+
+  const loadMessages = useCallback(async (convId: string) => {
+    setIsLoadingMessages(true);
+    try {
+      const res = await fetch(`/api/conversations/${convId}`);
+      const json = await res.json();
+      if (json.success) {
+        const msgs: Message[] = json.data.messages.map((m: ApiMessage) => ({
+          id: m.id,
+          role: m.role === "USER" ? "user" : "assistant",
+          content: m.content,
+          timestamp: m.createdAt,
+          reasoningSteps: m.reasoningSteps as ReasoningStep[] | undefined,
+        }));
+        setConversations((prev) =>
+          prev.map((c) => (c.id === convId ? { ...c, messages: msgs } : c))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to load messages:", err);
+    } finally {
+      setIsLoadingMessages(false);
+    }
+  }, []);
+
+  const handleSelectConversation = (convId: string) => {
+    setActiveConversationId(convId);
+    const conv = conversations.find((c) => c.id === convId);
+    if (conv && conv.messages.length === 0) {
+      loadMessages(convId);
+    }
+  };
 
   const simulateReasoning = async (): Promise<ReasoningStep[]> => {
     const steps: ReasoningStep[] = [
@@ -108,7 +162,39 @@ export default function CoFounderPage() {
   };
 
   const handleSend = async (content: string) => {
-    if (!activeConversation || isGenerating) return;
+    if (isGenerating) return;
+
+    let conv = activeConversation;
+    let convId = activeConversationId;
+
+    if (!conv || !convId) {
+      try {
+        const res = await fetch("/api/conversations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: content.length > 30 ? content.slice(0, 30) + "..." : content,
+          }),
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error("Failed to create conversation");
+
+        const newConv: Conversation = {
+          id: json.data.id,
+          title: json.data.title,
+          preview: content,
+          timestamp: "Just now",
+          messages: [],
+        };
+        setConversations((prev) => [newConv, ...prev]);
+        setActiveConversationId(newConv.id);
+        conv = newConv;
+        convId = newConv.id;
+      } catch (err) {
+        console.error("Failed to create conversation:", err);
+        return;
+      }
+    }
 
     const userMessage: Message = {
       id: generateId(),
@@ -118,11 +204,13 @@ export default function CoFounderPage() {
     };
 
     const updatedConversation = {
-      ...activeConversation,
-      messages: [...activeConversation.messages, userMessage],
+      ...conv,
+      messages: [...conv.messages, userMessage],
     };
 
-    setConversations(conversations.map((c) => (c.id === activeConversationId ? updatedConversation : c)));
+    setConversations((prev) =>
+      prev.map((c) => (c.id === convId ? updatedConversation : c))
+    );
     setIsGenerating(true);
 
     const reasoningPromise = simulateReasoning();
@@ -149,6 +237,7 @@ export default function CoFounderPage() {
       const decoder = new TextDecoder();
       const aiMessageId = generateId();
       const aiTimestamp = new Date().toISOString();
+      let fullContent = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -162,13 +251,14 @@ export default function CoFounderPage() {
             try {
               const data = JSON.parse(line.slice(6));
               if (data.content) {
+                fullContent += data.content;
                 setConversations((prev) => {
                   const currentMsg = prev
-                    .find((c) => c.id === activeConversationId)
+                    .find((c) => c.id === convId)
                     ?.messages.find((m) => m.id === aiMessageId);
                   const newContent = (currentMsg?.content || "") + data.content;
                   return prev.map((c) =>
-                    c.id === activeConversationId
+                    c.id === convId
                       ? {
                           ...c,
                           messages: [
@@ -184,13 +274,14 @@ export default function CoFounderPage() {
               // skip malformed
             }
           } else if (line.trim() && !line.startsWith("data:")) {
+            fullContent += line;
             setConversations((prev) => {
               const currentMsg = prev
-                .find((c) => c.id === activeConversationId)
+                .find((c) => c.id === convId)
                 ?.messages.find((m) => m.id === aiMessageId);
               const newContent = (currentMsg?.content || "") + line;
               return prev.map((c) =>
-                c.id === activeConversationId
+                c.id === convId
                   ? {
                       ...c,
                       messages: [
@@ -209,7 +300,7 @@ export default function CoFounderPage() {
 
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === activeConversationId
+          c.id === convId
             ? {
                 ...c,
                 messages: c.messages.map((m) =>
@@ -219,18 +310,45 @@ export default function CoFounderPage() {
             : c
         )
       );
+
+      // Persist user message
+      fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: "USER", content }),
+      }).catch((err) => console.error("Failed to save user message:", err));
+
+      // Persist assistant message
+      fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: "ASSISTANT",
+          content: fullContent,
+          reasoningSteps: finalSteps,
+        }),
+      }).catch((err) => console.error("Failed to save assistant message:", err));
+
+      // Update preview in sidebar
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convId
+            ? { ...c, preview: fullContent.slice(0, 80) || c.preview, timestamp: "Just now" }
+            : c
+        )
+      );
     } catch (error) {
       console.error("Chat error:", error);
       const errorMessage: Message = {
         id: generateId(),
         role: "assistant",
-        content: "I'm having trouble connecting to my AI engine. Please make sure Ollama is running locally (`ollama serve`) and try again.",
+        content: "I'm having trouble connecting to my AI engine. Please check your provider settings under Settings > Connect Providers and try again.",
         timestamp: new Date().toISOString(),
       };
 
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === activeConversationId
+          c.id === convId
             ? { ...c, messages: [...c.messages, errorMessage] }
             : c
         )
@@ -242,16 +360,27 @@ export default function CoFounderPage() {
   };
 
   const handleNewConversation = () => {
-    const newConversation: Conversation = {
-      id: generateId(),
-      title: "New Conversation",
-      preview: "Start a new conversation...",
-      timestamp: "Just now",
-      messages: [],
-    };
-    setConversations([newConversation, ...conversations]);
-    setActiveConversationId(newConversation.id);
+    setActiveConversationId(null);
   };
+
+  const handleDeleteConversation = async (convId: string) => {
+    try {
+      await fetch(`/api/conversations/${convId}`, { method: "DELETE" });
+      setConversations((prev) => prev.filter((c) => c.id !== convId));
+      if (activeConversationId === convId) {
+        setActiveConversationId(null);
+      }
+    } catch (err) {
+      console.error("Failed to delete conversation:", err);
+    }
+  };
+
+  const suggestions = [
+    `Analyze the market opportunity for ${companyName}`,
+    "Create a pitch deck outline",
+    "Review my financial model",
+    "Suggest a go-to-market strategy",
+  ];
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-4">
@@ -268,38 +397,53 @@ export default function CoFounderPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {conversations.map((conv) => (
-            <motion.button
-              key={conv.id}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onClick={() => setActiveConversationId(conv.id)}
-              className={cn(
-                "w-full text-left p-3 rounded-lg transition-all duration-200 relative",
-                conv.id === activeConversationId
-                  ? "bg-primary-container border-l-2 border-primary"
-                  : "hover:bg-surface-container-low border-l-2 border-transparent"
-              )}
-            >
-              <div className="flex items-start gap-3">
-                <div className={cn(
-                  "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
-                  conv.id === activeConversationId ? "bg-primary/15" : "bg-surface-container"
-                )}>
-                  <MessageSquare className={cn("w-4 h-4", conv.id === activeConversationId ? "text-primary" : "text-on-surface-variant")} />
+          {isLoadingConversations ? (
+            <p className="text-xs text-on-surface-variant text-center py-4">Loading...</p>
+          ) : conversations.length === 0 ? (
+            <p className="text-xs text-on-surface-variant text-center py-4">No conversations yet</p>
+          ) : (
+            conversations.map((conv) => (
+              <motion.button
+                key={conv.id}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => handleSelectConversation(conv.id)}
+                className={cn(
+                  "w-full text-left p-3 rounded-lg transition-all duration-200 relative group",
+                  conv.id === activeConversationId
+                    ? "bg-primary-container border-l-2 border-primary"
+                    : "hover:bg-surface-container-low border-l-2 border-transparent"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
+                    conv.id === activeConversationId ? "bg-primary/15" : "bg-surface-container"
+                  )}>
+                    <MessageSquare className={cn("w-4 h-4", conv.id === activeConversationId ? "text-primary" : "text-on-surface-variant")} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn("text-sm font-medium truncate", conv.id === activeConversationId ? "text-on-surface" : "text-on-surface/80")}>
+                      {conv.title}
+                    </p>
+                    <p className="text-xs text-on-surface-variant truncate mt-0.5">{conv.preview}</p>
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />{conv.timestamp}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteConversation(conv.id);
+                    }}
+                    className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm font-medium truncate", conv.id === activeConversationId ? "text-on-surface" : "text-on-surface/80")}>
-                    {conv.title}
-                  </p>
-                  <p className="text-xs text-on-surface-variant truncate mt-0.5">{conv.preview}</p>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                    <Clock className="w-3 h-3" />{conv.timestamp}
-                  </p>
-                </div>
-              </div>
-            </motion.button>
-          ))}
+              </motion.button>
+            ))
+          )}
         </div>
       </div>
 
@@ -312,7 +456,7 @@ export default function CoFounderPage() {
             </div>
             <div>
               <h2 className="font-semibold text-on-surface">GENESIS AI</h2>
-              <p className="text-xs text-on-surface-variant">Powered by Ollama &middot; Your AI Co-Founder</p>
+              <p className="text-xs text-on-surface-variant">Your AI Co-Founder</p>
             </div>
           </div>
           <button className="p-2 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-colors">
@@ -321,23 +465,18 @@ export default function CoFounderPage() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !isLoadingMessages ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl bg-primary-container flex items-center justify-center mb-4">
                 <Sparkles className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold text-on-surface mb-2">Welcome to GENESIS</h3>
+              <h3 className="text-xl font-semibold text-on-surface mb-2">Welcome to GENESIS{userName !== "there" ? `, ${userName}` : ""}</h3>
               <p className="text-on-surface-variant max-w-md">
                 Your AI Co-Founder is ready to help you build, strategize, and scale
                 your business. Ask anything about your market, strategy, or operations.
               </p>
               <div className="mt-6 grid grid-cols-2 gap-2 max-w-md">
-                {[
-                  "Analyze my market opportunity",
-                  "Create a pitch deck outline",
-                  "Review my financial model",
-                  "Suggest a go-to-market strategy",
-                ].map((suggestion) => (
+                {suggestions.map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => handleSend(suggestion)}
@@ -347,6 +486,10 @@ export default function CoFounderPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          ) : isLoadingMessages ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-on-surface-variant text-sm">Loading messages...</div>
             </div>
           ) : (
             <>

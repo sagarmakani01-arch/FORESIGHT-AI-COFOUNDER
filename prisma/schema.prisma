@@ -23,6 +23,8 @@ model User {
   company       Company?
   onboarding    Onboarding?
   conversations Conversation[]
+  aiProviders   AiProvider[]
+  notifications Notification[]
 
   @@map("users")
 }
@@ -161,6 +163,40 @@ enum MessageRole {
   SYSTEM
 }
 
+enum PositionStatus {
+  SOURCING
+  SCREENING
+  INTERVIEWING
+  OFFER
+  HIRED
+  CLOSED
+}
+
+enum CampaignType {
+  EMAIL
+  SOCIAL
+  CONTENT
+  REFERRAL
+  PARTNERSHIP
+  ADS
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
 // Company & Onboarding
 model Company {
   id             String        @id @default(cuid())
@@ -197,6 +233,10 @@ model Company {
   investors      Investor[]
   roadmaps       Roadmap[]
   conversations  Conversation[]
+  fileEntries    FileEntry[]
+  positions      Position[]
+  campaigns      Campaign[]
+  meetings       Meeting[]
 
   @@map("companies")
 }
@@ -295,6 +335,65 @@ model DocumentVersion {
 
   @@index([documentId])
   @@map("document_versions")
+}
+
+// Files & Folders
+model FileEntry {
+  id            String    @id @default(cuid())
+  name          String
+  type          String    @default("file")
+  content       String    @db.Text
+  parentId      String?
+  companyId     String
+  sharedWithAI  Boolean   @default(false)
+  aiNotes       String    @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  company  Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  parent   FileEntry?   @relation("FileTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children FileEntry[]  @relation("FileTree")
+
+  @@index([companyId])
+  @@index([parentId])
+  @@map("file_entries")
+}
+
+// AI Provider Keys
+model AiProvider {
+  id        String   @id @default(cuid())
+  userId    String
+  provider  String   // openai, anthropic, google, ollama
+  apiKey    String   @db.Text
+  baseUrl   String?
+  model     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("ai_providers")
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // info, success, warning, error
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notifications")
 }
 
 // AI Conversations
@@ -498,4 +597,62 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// Hiring
+model Position {
+  id          String         @id @default(cuid())
+  title       String
+  department  String
+  status      PositionStatus @default(SOURCING)
+  description String         @db.Text @default("")
+  salary      String?
+  location    String?
+  companyId   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("positions")
+}
+
+// Marketing
+model Campaign {
+  id          String         @id @default(cuid())
+  name        String
+  type        CampaignType   @default(SOCIAL)
+  status      CampaignStatus @default(DRAFT)
+  budget      String?
+  startDate   DateTime?
+  endDate     DateTime?
+  notes       String         @db.Text @default("")
+  companyId   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("campaigns")
+}
+
+// Meetings
+model Meeting {
+  id          String         @id @default(cuid())
+  title       String
+  date        DateTime
+  attendees   String         @default("")
+  notes       String         @db.Text @default("")
+  status      MeetingStatus  @default(SCHEDULED)
+  companyId   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([date])
+  @@map("meetings")
 }

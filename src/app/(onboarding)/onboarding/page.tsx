@@ -243,8 +243,27 @@ export default function OnboardingPage() {
 
   const handleLaunch = async () => {
     setIsLaunching(true);
-    await new Promise((r) => setTimeout(r, 2500));
-    router.push("/dashboard");
+    try {
+      const saveRes = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ step: 6, data }),
+      });
+      if (!saveRes.ok) throw new Error("Failed to save onboarding data");
+
+      const completeRes = await fetch("/api/onboarding", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!completeRes.ok) throw new Error("Failed to complete onboarding");
+
+      await fetch("/api/seed", { method: "POST" }).catch(() => {});
+
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Onboarding launch error:", err);
+      setIsLaunching(false);
+    }
   };
 
   const toggleArrayItem = (

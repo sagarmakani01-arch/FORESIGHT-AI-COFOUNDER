@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { X, Play } from "lucide-react";
 import { IMAGES } from "@/lib/images";
 
 const stats = [
@@ -15,6 +16,7 @@ const stats = [
 export function HeroSection() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true });
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <section
@@ -62,12 +64,12 @@ export function HeroSection() {
             >
               Start Building
             </Link>
-            <Link
-              href="/register"
+            <button
+              onClick={() => setDemoOpen(true)}
               className="rounded-full border border-border px-8 py-3.5 text-base font-semibold text-foreground transition-all duration-200 hover:bg-muted"
             >
               Watch Demo
-            </Link>
+            </button>
           </motion.div>
         </motion.div>
 
@@ -109,6 +111,46 @@ export function HeroSection() {
           </div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {demoOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/70"
+              onClick={() => setDemoOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="fixed left-1/2 top-1/2 z-50 w-full max-w-4xl -translate-x-1/2 -translate-y-1/4 rounded-2xl bg-surface overflow-hidden shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-outline-variant px-6 py-4">
+                <h3 className="text-lg font-semibold text-on-surface">GENESIS Demo</h3>
+                <button
+                  onClick={() => setDemoOpen(false)}
+                  className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface-container transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="relative aspect-video bg-black flex items-center justify-center">
+                <div className="text-center text-on-surface-variant">
+                  <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20">
+                    <Play className="h-10 w-10 text-primary ml-1" />
+                  </div>
+                  <p className="text-lg font-medium text-on-surface">Demo Video Coming Soon</p>
+                  <p className="mt-1 text-sm">Full product walkthrough — AI co-founder, file management, real-time collaboration</p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

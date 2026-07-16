@@ -34,9 +34,9 @@ export default function FileEditor() {
     prevNodeRef.current = node;
   }, [node]);
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (selectedId && isFile) {
-      updateContent(selectedId, localContent);
+      await updateContent(selectedId, localContent);
     }
   }, [selectedId, isFile, localContent, updateContent]);
 
@@ -123,7 +123,7 @@ export default function FileEditor() {
           const updated = [...prev];
           updated[updated.length - 1] = {
             role: "ai",
-            content: "I couldn't generate a response. Make sure Ollama is running (`ollama serve`).",
+            content: "I couldn't generate a response. Please check your AI provider settings and try again.",
           };
           return updated;
         });
@@ -133,7 +133,7 @@ export default function FileEditor() {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: "ai",
-          content: "Failed to reach the AI engine. Please ensure Ollama is running locally.",
+          content: "Failed to reach the AI engine. Please check your AI provider settings.",
         };
         return updated;
       });

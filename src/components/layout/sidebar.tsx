@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -30,6 +30,8 @@ import {
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const navItems = [
@@ -51,17 +53,34 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { data: session } = useSession();
 
   return (
-    <motion.aside
-      initial={false}
-      animate={{ width: collapsed ? 72 : 280 }}
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed left-0 top-0 z-40 flex h-full flex-col bg-surface thin-border border-r border-outline-variant"
-    >
+    <>
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+            onClick={onMobileClose}
+          />
+        )}
+      </AnimatePresence>
+
+      <motion.aside
+        initial={false}
+        animate={{ width: collapsed ? 72 : 280 }}
+        transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+        className={`fixed left-0 top-0 z-40 flex h-full flex-col bg-surface thin-border border-r border-outline-variant max-md:transition-transform max-md:duration-300 ${
+          mobileOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full"
+        }`}
+      >
       <div className="flex h-16 items-center justify-between px-4">
         <AnimatePresence mode="wait">
           {!collapsed && (
@@ -94,6 +113,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={() => onMobileClose?.()}
                   className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
                     isActive
                       ? "text-primary bg-primary-container"
@@ -131,7 +151,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="border-t border-outline-variant p-3">
         <div className={`flex items-center gap-3 rounded-lg px-3 py-2.5 ${collapsed ? "justify-center" : ""}`}>
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-            <span className="text-xs font-bold">SM</span>
+            <span className="text-xs font-bold">{(session?.user?.name || "U").split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}</span>
           </div>
           <AnimatePresence mode="wait">
             {!collapsed && (
@@ -143,8 +163,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 className="flex flex-1 items-center justify-between overflow-hidden"
               >
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-on-surface">Sagar Makani</span>
-                  <span className="text-xs text-on-surface-variant">sagar@nexuspay.io</span>
+                  <span className="text-sm font-medium text-on-surface">{session?.user?.name || "User"}</span>
+                  <span className="text-xs text-on-surface-variant">{session?.user?.email || ""}</span>
                 </div>
                 <button
                   onClick={() => signOut({ callbackUrl: "/login" })}
@@ -164,5 +184,6 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         </button>
       </div>
     </motion.aside>
+    </>
   );
 }

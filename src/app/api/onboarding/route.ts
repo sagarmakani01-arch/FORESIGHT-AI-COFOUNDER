@@ -1,9 +1,10 @@
+import { authOptions } from "@/lib/auth/config";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 
 async function getAuthUserId() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
   if (!session?.user) return null;
   return (session.user as { id: string }).id;
 }
@@ -98,54 +99,50 @@ export async function PUT() {
 
     const onboardingData = onboarding.data as Record<string, unknown>;
 
+    const fundingStageMap: Record<string, string> = {
+      "Pre-Seed": "PRE_SEED",
+      Seed: "SEED",
+      "Series A": "SERIES_A",
+      Growth: "GROWTH",
+      Bootstrapped: "IDEA",
+    };
+
+    const teamSizeMap: Record<string, number> = {
+      "Just me": 1,
+      "2-5 people": 3,
+      "6-10 people": 8,
+      "11-25 people": 18,
+      "25+ people": 30,
+    };
+
+    const stageKey = (onboardingData.fundingStage as string) || "";
+    const stage = (fundingStageMap[stageKey] || "IDEA") as never;
+    const teamSizeStr = (onboardingData.currentTeamSize as string) || "Just me";
+    const goals = [onboardingData.goal1, onboardingData.goal2, onboardingData.goal3]
+      .filter((g): g is string => typeof g === "string" && g.trim().length > 0);
+
+    const companyData = {
+      name: (onboardingData.buildingWhat as string)?.split("\n")[0]?.trim() || "My Startup",
+      industry: (onboardingData.industrySector as string) || "Other",
+      stage,
+      vision: (onboardingData.visionStatement as string) || "",
+      mission: (onboardingData.mission as string) || "",
+      description: (onboardingData.buildingWhat as string) || "",
+      website: null as string | null,
+      location: (onboardingData.country as string) || null,
+      teamSize: teamSizeMap[teamSizeStr] || 1,
+      targetMarket: (onboardingData.targetAudience as string) || null,
+      businessModel: null as string | null,
+      fundingStatus: (onboardingData.fundingStage as string) || null,
+      goals,
+    };
+
     const company = await prisma.company.upsert({
       where: { userId },
-      update: {
-        name: (onboardingData.companyName as string) || "My Company",
-        industry: (onboardingData.industry as string) || "other",
-        stage: (onboardingData.stage as never) || "IDEA",
-        vision: (onboardingData.vision as string) || "",
-        mission: (onboardingData.mission as string) || "",
-        description: (onboardingData.description as string) || "",
-        website: (onboardingData.website as string) || null,
-        location: (onboardingData.location as string) || null,
-        teamSize: (onboardingData.teamSize as number) || 1,
-        foundedDate: onboardingData.foundedDate
-          ? new Date(onboardingData.foundedDate as string)
-          : null,
-        targetMarket: (onboardingData.targetMarket as string) || null,
-        businessModel: (onboardingData.businessModel as string) || null,
-        revenueStreams: (onboardingData.revenueStreams as string[]) || [],
-        fundingStatus: (onboardingData.fundingStatus as string) || null,
-        monthlyBurn: (onboardingData.monthlyBurn as number) || null,
-        runway: (onboardingData.runway as number) || null,
-        keyMetrics: (onboardingData.keyMetrics as string[]) || [],
-        challenges: (onboardingData.challenges as string[]) || [],
-        goals: (onboardingData.goals as string[]) || [],
-      },
+      update: companyData,
       create: {
         userId,
-        name: (onboardingData.companyName as string) || "My Company",
-        industry: (onboardingData.industry as string) || "other",
-        stage: (onboardingData.stage as never) || "IDEA",
-        vision: (onboardingData.vision as string) || "",
-        mission: (onboardingData.mission as string) || "",
-        description: (onboardingData.description as string) || "",
-        website: (onboardingData.website as string) || null,
-        location: (onboardingData.location as string) || null,
-        teamSize: (onboardingData.teamSize as number) || 1,
-        foundedDate: onboardingData.foundedDate
-          ? new Date(onboardingData.foundedDate as string)
-          : null,
-        targetMarket: (onboardingData.targetMarket as string) || null,
-        businessModel: (onboardingData.businessModel as string) || null,
-        revenueStreams: (onboardingData.revenueStreams as string[]) || [],
-        fundingStatus: (onboardingData.fundingStatus as string) || null,
-        monthlyBurn: (onboardingData.monthlyBurn as number) || null,
-        runway: (onboardingData.runway as number) || null,
-        keyMetrics: (onboardingData.keyMetrics as string[]) || [],
-        challenges: (onboardingData.challenges as string[]) || [],
-        goals: (onboardingData.goals as string[]) || [],
+        ...companyData,
       },
     });
 

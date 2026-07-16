@@ -1,84 +1,184 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Plus, Calendar, Clock, Users, Video, MapPin, FileText } from "lucide-react";
+import { Plus, Calendar, Clock, Users, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useCompanyData, formatDate } from "@/lib/hooks";
 import PageHeader from "@/components/shared/page-header";
-
-const meetings = [
-  { id: "1", title: "Weekly Team Standup", date: "2026-07-14", time: "10:00 AM", duration: "30 min", attendees: ["Sagar", "Priya", "Ravi", "Anita"], type: "recurring", notes: "Review sprint progress, blockers, and weekly goals." },
-  { id: "2", title: "Investor Meeting - Sequoia", date: "2026-07-18", time: "2:00 PM", duration: "60 min", attendees: ["Sagar", "Anand Piramal"], type: "external", notes: "Discuss AI credit scoring metrics and Series A terms." },
-  { id: "3", title: "Product Review - Wallet v2.0", date: "2026-07-15", time: "11:00 AM", duration: "45 min", attendees: ["Sagar", "Priya", "Anita", "Vikram"], type: "internal", notes: "Review biometric auth demo and P2P transfer flow." },
-  { id: "4", title: "BharatPe Partnership Call", date: "2026-07-16", time: "3:00 PM", duration: "30 min", attendees: ["Sagar", "Neha"], type: "external", notes: "Finalize QR code integration timeline and merchant onboarding." },
-  { id: "5", title: "Board Update (Async)", date: "2026-07-20", time: "All Day", duration: "—", attendees: ["Sagar", "Sarah Chen"], type: "recurring", notes: "Monthly board update via email. Include KPIs, financials, and milestones." },
-];
-
-const todayCalendar = [
-  { time: "10:00", title: "Team Standup", duration: "30m" },
-  { time: "11:00", title: "Product Review", duration: "45m" },
-  { time: "14:00", title: "Sequoia Meeting Prep", duration: "30m" },
-  { time: "15:00", title: "BharatPe Call", duration: "30m" },
-];
+import { Modal, FormField, inputClass, selectClass, SubmitButton } from "@/components/shared/modal";
 
 export default function MeetingsPage() {
-  const [selectedMeeting, setSelectedMeeting] = useState(meetings[0]);
+  const { data, loading } = useCompanyData();
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ title: "", date: "", attendees: "", notes: "" });
+  const [meetings, setMeetings] = useState<Array<{ id: string; title: string; date: string; attendees: string; notes: string }>>([]);
+  const [meetingsLoading, setMeetingsLoading] = useState(true);
+
+  async function fetchMeetings() {
+    try {
+      const res = await fetch("/api/meetings");
+      const json = await res.json();
+      if (json.success) {
+        setMeetings(json.data.map((m: { id: string; title: string; date: string; attendees: string; notes: string; status: string }) => ({
+          ...m,
+          date: m.date,
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to fetch meetings", err);
+    } finally {
+      setMeetingsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchMeetings();
+  }, []);
+
+  const milestoneMeetings = useMemo(() => {
+    if (!data) return [];
+    return (data.milestones ?? [])
+      .filter((m) => m.status.toLowerCase() !== "completed" && m.status.toLowerCase() !== "cancelled")
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+      .map((m) => ({
+        id: m.id,
+        title: m.title,
+        date: m.deadline,
+        notes: m.description || "No notes.",
+        status: m.status.replace(/_/g, " ").toLowerCase(),
+      }));
+  }, [data]);
+
+  const allMeetings = useMemo(() => {
+    const customMeetings = meetings.map((m) => ({ ...m, status: "scheduled" }));
+    return [...customMeetings, ...milestoneMeetings];
+  }, [meetings, milestoneMeetings]);
+
+  const selectedMeeting = allMeetings[selectedIdx] ?? allMeetings[0];
+
+  if (loading || meetingsLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Meetings" description="Schedule and manage your meetings" actions={[]} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-3">
+            {[1, 2, 3].map((i) => <div key={i} className="bg-surface thin-border rounded-xl p-4 animate-pulse h-20" />)}
+          </div>
+          <div className="bg-surface thin-border rounded-xl h-64 animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: form.title, date: form.date, attendees: form.attendees, notes: form.notes }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        await fetchMeetings();
+        setForm({ title: "", date: "", attendees: "", notes: "" });
+        setModalOpen(false);
+      }
+    } catch (err) {
+      console.error("Failed to create meeting", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <PageHeader title="Meetings" description="Schedule and manage your meetings" actions={[
-        <button key="new" className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors font-medium text-sm"><Plus className="w-4 h-4" />New Meeting</button>,
+        <button key="new" onClick={() => setModalOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-dark transition-colors font-medium text-sm"><Plus className="w-4 h-4" />New Meeting</button>,
       ]} />
 
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New Meeting">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <FormField label="Title" required>
+            <input className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Q3 Planning" required />
+          </FormField>
+          <FormField label="Date & Time" required>
+            <input type="datetime-local" className={inputClass} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+          </FormField>
+          <FormField label="Attendees">
+            <input className={inputClass} value={form.attendees} onChange={(e) => setForm({ ...form, attendees: e.target.value })} placeholder="e.g. Alice, Bob, Charlie" />
+          </FormField>
+          <FormField label="Notes">
+            <textarea className={inputClass} rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Agenda, talking points..." />
+          </FormField>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={() => setModalOpen(false)} className="rounded-lg px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container transition-colors">Cancel</button>
+            <SubmitButton loading={submitting}>Create Meeting</SubmitButton>
+          </div>
+        </form>
+      </Modal>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Upcoming Meetings */}
         <div className="lg:col-span-2 space-y-3">
           <h3 className="type-label-caps text-on-surface">Upcoming</h3>
-          {meetings.map((meeting) => (
-            <motion.div key={meeting.id} whileHover={{ x: 2 }} onClick={() => setSelectedMeeting(meeting)} className={cn("bg-surface thin-border rounded-xl p-4 cursor-pointer transition-all hover:shadow-card", selectedMeeting.id === meeting.id && "ring-2 ring-primary/20")}>
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="font-medium text-on-surface">{meeting.title}</h4>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-on-surface-variant">
-                    <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(meeting.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}</span>
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{meeting.time}</span>
-                    <span className="flex items-center gap-1"><Users className="w-3 h-3" />{meeting.attendees.length}</span>
+          {allMeetings.length === 0 ? (
+            <div className="bg-surface thin-border rounded-xl p-12 text-center text-on-surface-variant text-sm">
+              No meetings scheduled. Upcoming milestones will appear here.
+            </div>
+          ) : (
+            allMeetings.map((meeting, idx) => (
+              <motion.div key={meeting.id} whileHover={{ x: 2 }} onClick={() => setSelectedIdx(idx)} className={cn("bg-surface thin-border rounded-xl p-4 cursor-pointer transition-all hover:shadow-card", selectedMeeting?.id === meeting.id && "ring-2 ring-primary/20")}>
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h4 className="font-medium text-on-surface">{meeting.title}</h4>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-on-surface-variant">
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{new Date(meeting.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}</span>
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />All Day</span>
+                    </div>
                   </div>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary-container text-primary">
+                    {meeting.status}
+                  </span>
                 </div>
-                <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold", meeting.type === "external" ? "bg-primary-container text-primary" : meeting.type === "recurring" ? "bg-surface-container text-on-surface-variant" : "bg-surface-container text-on-surface-variant")}>
-                  {meeting.type}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))
+          )}
         </div>
 
-        {/* Today's Schedule + Notes */}
         <div className="space-y-4">
           <div className="bg-surface thin-border rounded-xl p-5">
             <h3 className="type-label-caps text-on-surface mb-3">Today&apos;s Schedule</h3>
             <div className="space-y-2">
-              {todayCalendar.map((item, i) => (
-                <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-surface-container-low">
-                  <span className="text-xs font-mono text-on-surface-variant w-12 shrink-0">{item.time}</span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-on-surface">{item.title}</p>
-                    <p className="text-xs text-on-surface-variant">{item.duration}</p>
+              {allMeetings.length === 0 ? (
+                <p className="text-sm text-on-surface-variant p-2">No events today.</p>
+              ) : (
+                allMeetings.slice(0, 4).map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-surface-container-low">
+                    <span className="text-xs font-mono text-on-surface-variant w-12 shrink-0">All Day</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-on-surface">{item.title}</p>
+                      <p className="text-xs text-on-surface-variant">{item.status}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
           <div className="bg-surface thin-border rounded-xl p-5">
             <h3 className="type-label-caps text-on-surface mb-3 flex items-center gap-2"><FileText className="w-4 h-4 text-primary" />Meeting Notes</h3>
-            <p className="text-xs text-on-surface-variant mb-2">{selectedMeeting.title}</p>
-            <p className="text-sm text-on-surface leading-relaxed">{selectedMeeting.notes}</p>
-            <div className="mt-3 flex flex-wrap gap-1">
-              {selectedMeeting.attendees.map((a) => (
-                <span key={a} className="px-2 py-0.5 rounded-full bg-surface-container text-xs text-on-surface-variant">{a}</span>
-              ))}
-            </div>
+            {selectedMeeting ? (
+              <>
+                <p className="text-xs text-on-surface-variant mb-2">{selectedMeeting.title}</p>
+                <p className="text-sm text-on-surface leading-relaxed">{selectedMeeting.notes}</p>
+              </>
+            ) : (
+              <p className="text-sm text-on-surface-variant">Select a meeting to view notes.</p>
+            )}
           </div>
         </div>
       </div>

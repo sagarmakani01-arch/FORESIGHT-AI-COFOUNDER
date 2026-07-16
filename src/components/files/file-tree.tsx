@@ -44,16 +44,16 @@ function FileTreeItem({ node, depth }: { node: FileNode; depth: number }) {
     setSelectedId(node.id);
   };
 
-  const handleRename = () => {
+  const handleRename = async () => {
     if (renameValue.trim() && renameValue !== node.name) {
-      renameNode(node.id, renameValue.trim());
+      await renameNode(node.id, renameValue.trim());
     }
     setIsRenaming(false);
   };
 
-  const handleCreateSubItem = (type: "file" | "folder") => {
+  const handleCreateSubItem = async (type: "file" | "folder") => {
     const name = type === "file" ? "New Document.md" : "New Folder";
-    const newNode = createNode(type, name, node.id);
+    const newNode = await createNode(type, name, node.id);
     setSelectedId(newNode.id);
     setShowMenu(false);
   };
@@ -169,8 +169,7 @@ function FileTreeItem({ node, depth }: { node: FileNode; depth: number }) {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    deleteNode(node.id);
-                    setShowMenu(false);
+                    deleteNode(node.id).then(() => setShowMenu(false));
                   }}
                   className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-destructive hover:bg-destructive/5"
                 >
@@ -207,11 +206,24 @@ function FileTreeItem({ node, depth }: { node: FileNode; depth: number }) {
 }
 
 export default function FileTree() {
-  const { getChildren } = useFilesStore();
+  const { getChildren, loading } = useFilesStore();
   const rootNodes = getChildren(null);
+
+  if (loading) {
+    return (
+      <div className="py-4 text-center text-xs text-on-surface-variant">
+        Loading files...
+      </div>
+    );
+  }
 
   return (
     <div className="py-1">
+      {rootNodes.length === 0 && (
+        <div className="py-4 text-center text-xs text-on-surface-variant/50">
+          No files yet. Create one to get started.
+        </div>
+      )}
       {rootNodes
         .sort((a, b) => {
           if (a.type === b.type) return a.name.localeCompare(b.name);

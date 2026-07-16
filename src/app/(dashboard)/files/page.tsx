@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FilesStoreProvider, useFilesStore } from "@/lib/files-store";
 import FileTree from "@/components/files/file-tree";
 import FileEditor from "@/components/files/file-editor";
@@ -9,20 +9,58 @@ import {
   FolderPlus,
   FilePlus,
   Search,
+  Upload,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 function FilesContent() {
   const { createNode, setSelectedId, selectedId } = useFilesStore();
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarWidth] = useState(260);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleCreate = (type: "file" | "folder") => {
+  const handleCreate = async (type: "file" | "folder") => {
     const name = type === "file" ? "New Document.md" : "New Folder";
-    const node = createNode(type, name, null);
+    const node = await createNode(type, name, null);
     setSelectedId(node.id);
     setShowNewMenu(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const textExtensions = [
+      ".txt", ".md", ".js", ".ts", ".tsx", ".jsx", ".py", ".json", ".csv",
+      ".html", ".css", ".yaml", ".yml", ".sql", ".xml", ".env", ".gitignore",
+      ".sh", ".bat", ".log", ".config", ".toml",
+    ];
+    const imageExtensions = [".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"];
+    const pdfExtensions = [".pdf"];
+
+    for (const file of Array.from(files)) {
+      const ext = "." + file.name.split(".").pop()?.toLowerCase();
+      const sizeKB = Math.round(file.size / 1024);
+
+      let content: string;
+
+      if (textExtensions.includes(ext)) {
+        content = await file.text();
+      } else if (pdfExtensions.includes(ext)) {
+        content = `[PDF uploaded - text extraction not available]`;
+      } else if (imageExtensions.includes(ext)) {
+        content = `[Image uploaded: ${file.name}]`;
+      } else {
+        content = `[File uploaded: ${file.name}, size: ${sizeKB}kb]`;
+      }
+
+      const node = await createNode("file", file.name, null, content);
+      setSelectedId(node.id);
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   return (
@@ -51,6 +89,12 @@ function FilesContent() {
                 />
                 <div className="absolute right-0 top-8 z-50 w-44 rounded-xl bg-surface thin-border shadow-modal p-1">
                   <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container-low"
+                  >
+                    <Upload className="h-3.5 w-3.5" /> Upload File
+                  </button>
+                  <button
                     onClick={() => handleCreate("file")}
                     className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-on-surface-variant hover:bg-surface-container-low"
                   >
@@ -67,6 +111,15 @@ function FilesContent() {
             )}
           </div>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          multiple
+          accept=".txt,.md,.js,.ts,.tsx,.jsx,.py,.json,.csv,.html,.css,.yaml,.yml,.sql,.xml,.pdf,.png,.jpg,.jpeg,.gif,.svg,.webp,.env,.sh,.log,.toml,.config"
+          onChange={handleFileUpload}
+        />
 
         {/* Search */}
         <div className="px-3 py-2">

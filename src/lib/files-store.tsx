@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useEffect,
+  ReactNode,
+} from "react";
 
 export type FileNodeType = "file" | "folder";
 
@@ -21,230 +28,86 @@ interface FilesStore {
   nodes: Record<string, FileNode>;
   selectedId: string | null;
   expandedFolders: Set<string>;
+  loading: boolean;
   setSelectedId: (id: string | null) => void;
   toggleFolder: (id: string) => void;
-  createNode: (type: FileNodeType, name: string, parentId: string | null) => FileNode;
-  renameNode: (id: string, name: string) => void;
-  deleteNode: (id: string) => void;
-  updateContent: (id: string, content: string) => void;
-  toggleShareWithAI: (id: string) => void;
-  updateAINotes: (id: string, notes: string) => void;
+  createNode: (
+    type: FileNodeType,
+    name: string,
+    parentId: string | null,
+    content?: string
+  ) => Promise<FileNode>;
+  renameNode: (id: string, name: string) => Promise<void>;
+  deleteNode: (id: string) => Promise<void>;
+  updateContent: (id: string, content: string) => Promise<void>;
+  toggleShareWithAI: (id: string) => Promise<void>;
+  updateAINotes: (id: string, notes: string) => Promise<void>;
   getChildren: (parentId: string | null) => FileNode[];
   getPath: (id: string) => FileNode[];
+  refresh: () => Promise<void>;
 }
 
 const FilesStoreContext = createContext<FilesStore | null>(null);
 
-function uid(): string {
-  return `f_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+function mapEntry(entry: Record<string, unknown>): FileNode {
+  return {
+    id: entry.id as string,
+    name: entry.name as string,
+    type: entry.type as FileNodeType,
+    content: (entry.content as string) || "",
+    parentId: (entry.parentId as string) || null,
+    createdAt: entry.createdAt as string,
+    updatedAt: entry.updatedAt as string,
+    children: Array.isArray(entry.children)
+      ? (entry.children as Record<string, unknown>[]).map(
+          (c) => c.id as string
+        )
+      : [],
+    sharedWithAI: (entry.sharedWithAI as boolean) || false,
+    aiNotes: (entry.aiNotes as string) || "",
+  };
 }
 
-const initialNodes: Record<string, FileNode> = {
-  "root-strategy": {
-    id: "root-strategy",
-    name: "Strategy",
-    type: "folder",
-    parentId: null,
-    createdAt: "2026-07-01T10:00:00Z",
-    updatedAt: "2026-07-01T10:00:00Z",
-    children: ["doc-growth", "doc-pitch"],
-  },
-  "root-product": {
-    id: "root-product",
-    name: "Product",
-    type: "folder",
-    parentId: null,
-    createdAt: "2026-07-01T10:00:00Z",
-    updatedAt: "2026-07-01T10:00:00Z",
-    children: ["doc-prd", "folder-ux"],
-  },
-  "root-finance": {
-    id: "root-finance",
-    name: "Finance",
-    type: "folder",
-    parentId: null,
-    createdAt: "2026-07-01T10:00:00Z",
-    updatedAt: "2026-07-01T10:00:00Z",
-    children: ["doc-financial-model"],
-  },
-  "folder-ux": {
-    id: "folder-ux",
-    name: "UX Research",
-    type: "folder",
-    parentId: "root-product",
-    createdAt: "2026-07-05T10:00:00Z",
-    updatedAt: "2026-07-05T10:00:00Z",
-    children: [],
-  },
-  "doc-growth": {
-    id: "doc-growth",
-    name: "Growth Strategy Q3.md",
-    type: "file",
-    parentId: "root-strategy",
-    content: `# Growth Strategy Q3 2026
-
-## Executive Summary
-NexusPay is targeting 50,000 active users by EOY 2026 through a multi-channel growth approach.
-
-## Key Initiatives
-
-### 1. Merchant Acquisition
-- Target: 5,000 new merchants
-- Strategy: Partner with POS system providers
-- Budget: $120,000
-
-### 2. User Referral Program
-- Incentive: $5 credit for referrer and referee
-- Projected impact: 15,000 new users
-- Cost per acquisition: $10
-
-### 3. Content Marketing
-- Weekly fintech insights newsletter
-- Monthly case studies with merchants
-- Social media presence on LinkedIn & Twitter
-
-## KPIs
-| Metric | Current | Target |
-|--------|---------|--------|
-| MAU | 18,240 | 50,000 |
-| Merchants | 2,412 | 7,500 |
-| MRR | $88,700 | $200,000 |
-| NPS | 72 | 80 |
-
-## Budget Allocation
-- Digital Marketing: $80,000
-- Partnerships: $40,000
-- Content: $20,000
-`,
-    createdAt: "2026-07-10T10:00:00Z",
-    updatedAt: "2026-07-14T08:30:00Z",
-    sharedWithAI: true,
-    aiNotes: "AI has reviewed this document and suggests focusing more on merchant acquisition timelines.",
-  },
-  "doc-pitch": {
-    id: "doc-pitch",
-    name: "Investor Pitch Deck.md",
-    type: "file",
-    parentId: "root-strategy",
-    content: `# NexusPay — Investor Pitch Deck
-
-## Slide 1: The Problem
-60% of SMBs in emerging markets lack access to digital payment infrastructure.
-
-## Slide 2: Our Solution
-NexusPay provides a mobile-first payment platform with AI-powered credit scoring.
-
-## Slide 3: Market Size
-- TAM: $240B (Digital payments in emerging markets)
-- SAM: $48B (SMB payment infrastructure)
-- SOM: $2.4B (India SMB segment)
-
-## Slide 4: Traction
-- 18,240 active users
-- $88,700 MRR (32% MoM growth)
-- 2,412 merchants
-- 91.4% credit scoring accuracy
-
-## Slide 5: Business Model
-- Transaction fees: 1.5%
-- Premium subscriptions: $29/mo
-- Credit scoring API: $0.10/query
-
-## Slide 6: Team
-- Sagar Makani — CEO, Ex-PayPal
-- Priya Mehta — CTO, Ex-Google
-`,
-    createdAt: "2026-07-12T10:00:00Z",
-    updatedAt: "2026-07-14T09:15:00Z",
-    sharedWithAI: true,
-  },
-  "doc-prd": {
-    id: "doc-prd",
-    name: "Product Requirements Doc.md",
-    type: "file",
-    parentId: "root-product",
-    content: `# PRD: Biometric Authentication
-
-## Overview
-Implement biometric authentication (fingerprint + face recognition) for the NexusPay mobile app.
-
-## User Story
-As a NexusPay user, I want to authenticate using my fingerprint so I can access my account quickly and securely.
-
-## Acceptance Criteria
-1. Users can enroll biometric data during onboarding
-2. Login supports fingerprint authentication
-3. Transaction authorization via biometric
-4. Fallback to PIN if biometric fails
-5. Biometric data stored in device secure enclave only
-
-## Technical Requirements
-- iOS: Face ID + Touch ID via LocalAuthentication framework
-- Android: BiometricPrompt API
-- Backend: Biometric template hash verification
-
-## Priority: P0 (Critical)
-## Target Release: v2.1
-## Timeline: 6 weeks
-`,
-    createdAt: "2026-07-08T10:00:00Z",
-    updatedAt: "2026-07-13T14:00:00Z",
-    sharedWithAI: false,
-  },
-  "doc-financial-model": {
-    id: "doc-financial-model",
-    name: "Financial Model.md",
-    type: "file",
-    parentId: "root-finance",
-    content: `# Financial Model — NexusPay 2026-2027
-
-## Revenue Projections
-
-### Q3 2026
-- Transaction Revenue: $132,000
-- Subscription Revenue: $48,000
-- API Revenue: $12,000
-- **Total: $192,000**
-
-### Q4 2026
-- Transaction Revenue: $210,000
-- Subscription Revenue: $78,000
-- API Revenue: $22,000
-- **Total: $310,000**
-
-### Q1 2027
-- Transaction Revenue: $340,000
-- Subscription Revenue: $120,000
-- API Revenue: $40,000
-- **Total: $500,000**
-
-## Expense Breakdown
-| Category | Monthly | Annual |
-|----------|---------|--------|
-| Salaries | $95,000 | $1,140,000 |
-| Infrastructure | $12,000 | $144,000 |
-| Marketing | $25,000 | $300,000 |
-| Operations | $10,000 | $120,000 |
-| **Total** | **$142,000** | **$1,704,000** |
-
-## Funding Requirements
-- Current Runway: 14 months
-- Series A Target: $5M
-- Use of Funds: 60% Product, 25% Growth, 15% Ops
-`,
-    createdAt: "2026-07-06T10:00:00Z",
-    updatedAt: "2026-07-14T07:00:00Z",
-    sharedWithAI: true,
-    aiNotes: "AI建议增加敏感性分析和场景规划部分。",
-  },
-};
+function toNodeMap(
+  entries: Record<string, unknown>[]
+): Record<string, FileNode> {
+  const map: Record<string, FileNode> = {};
+  for (const entry of entries) {
+    const node = mapEntry(entry);
+    map[node.id] = node;
+  }
+  return map;
+}
 
 export function FilesStoreProvider({ children }: { children: ReactNode }) {
-  const [nodes, setNodes] = useState<Record<string, FileNode>>(initialNodes);
+  const [nodes, setNodes] = useState<Record<string, FileNode>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
-    new Set(["root-strategy", "root-product", "root-finance"])
+    new Set()
   );
+  const [loading, setLoading] = useState(true);
+
+  const fetchFiles = useCallback(async () => {
+    try {
+      const res = await fetch("/api/files");
+      const json = await res.json();
+      if (json.success) {
+        setNodes(toNodeMap(json.data));
+      }
+    } catch (err) {
+      console.error("Failed to fetch files:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchFiles();
+  }, [fetchFiles]);
+
+  const refresh = useCallback(async () => {
+    await fetchFiles();
+  }, [fetchFiles]);
 
   const toggleFolder = useCallback((id: string) => {
     setExpandedFolders((prev) => {
@@ -256,50 +119,65 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const createNode = useCallback(
-    (type: FileNodeType, name: string, parentId: string | null): FileNode => {
-      const id = uid();
-      const now = new Date().toISOString();
-      const newNode: FileNode = {
-        id,
-        name,
-        type,
-        parentId,
-        createdAt: now,
-        updatedAt: now,
-        content: type === "file" ? "" : undefined,
-        children: type === "folder" ? [] : undefined,
-      };
+    async (
+      type: FileNodeType,
+      name: string,
+      parentId: string | null,
+      content?: string
+    ): Promise<FileNode> => {
+      const res = await fetch("/api/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, type, parentId, content }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+
+      const entry = json.data as Record<string, unknown>;
+      const node = mapEntry(entry);
 
       setNodes((prev) => {
-        const next = { ...prev, [id]: newNode };
+        const next = { ...prev, [node.id]: node };
         if (parentId && next[parentId]) {
           next[parentId] = {
             ...next[parentId],
-            children: [...(next[parentId].children || []), id],
-            updatedAt: now,
+            children: [...(next[parentId].children || []), node.id],
+            updatedAt: node.updatedAt,
           };
         }
         return next;
       });
 
       if (type === "folder") {
-        setExpandedFolders((prev) => new Set([...prev, id]));
+        setExpandedFolders((prev) => new Set([...prev, node.id]));
       }
 
-      return newNode;
+      return node;
     },
     []
   );
 
-  const renameNode = useCallback((id: string, name: string) => {
-    setNodes((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], name, updatedAt: new Date().toISOString() },
-    }));
+  const renameNode = useCallback(async (id: string, name: string) => {
+    const res = await fetch(`/api/files/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const entry = json.data as Record<string, unknown>;
+    const updated = mapEntry(entry);
+
+    setNodes((prev) => ({ ...prev, [id]: updated }));
   }, []);
 
   const deleteNode = useCallback(
-    (id: string) => {
+    async (id: string) => {
+      const res = await fetch(`/api/files/${id}`, { method: "DELETE" });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error);
+
       setNodes((prev) => {
         const node = prev[id];
         if (!node) return prev;
@@ -318,7 +196,9 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
         if (node.parentId && next[node.parentId]) {
           next[node.parentId] = {
             ...next[node.parentId],
-            children: (next[node.parentId].children || []).filter((c) => c !== id),
+            children: (next[node.parentId].children || []).filter(
+              (c) => c !== id
+            ),
             updatedAt: new Date().toISOString(),
           };
         }
@@ -331,29 +211,52 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  const updateContent = useCallback((id: string, content: string) => {
-    setNodes((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], content, updatedAt: new Date().toISOString() },
-    }));
+  const updateContent = useCallback(async (id: string, content: string) => {
+    const res = await fetch(`/api/files/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const entry = json.data as Record<string, unknown>;
+    const updated = mapEntry(entry);
+
+    setNodes((prev) => ({ ...prev, [id]: updated }));
   }, []);
 
-  const toggleShareWithAI = useCallback((id: string) => {
-    setNodes((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        sharedWithAI: !prev[id].sharedWithAI,
-        updatedAt: new Date().toISOString(),
-      },
-    }));
-  }, []);
+  const toggleShareWithAI = useCallback(async (id: string) => {
+    const current = nodes[id];
+    if (!current) return;
 
-  const updateAINotes = useCallback((id: string, notes: string) => {
-    setNodes((prev) => ({
-      ...prev,
-      [id]: { ...prev[id], aiNotes: notes, updatedAt: new Date().toISOString() },
-    }));
+    const res = await fetch(`/api/files/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sharedWithAI: !current.sharedWithAI }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const entry = json.data as Record<string, unknown>;
+    const updated = mapEntry(entry);
+
+    setNodes((prev) => ({ ...prev, [id]: updated }));
+  }, [nodes]);
+
+  const updateAINotes = useCallback(async (id: string, notes: string) => {
+    const res = await fetch(`/api/files/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ aiNotes: notes }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error);
+
+    const entry = json.data as Record<string, unknown>;
+    const updated = mapEntry(entry);
+
+    setNodes((prev) => ({ ...prev, [id]: updated }));
   }, []);
 
   const getChildren = useCallback(
@@ -369,7 +272,9 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
       let current = nodes[id];
       while (current) {
         path.unshift(current);
-        current = current.parentId ? nodes[current.parentId] : (undefined as unknown as FileNode);
+        current = current.parentId
+          ? nodes[current.parentId]
+          : (undefined as unknown as FileNode);
       }
       return path;
     },
@@ -382,6 +287,7 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
         nodes,
         selectedId,
         expandedFolders,
+        loading,
         setSelectedId,
         toggleFolder,
         createNode,
@@ -392,6 +298,7 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
         updateAINotes,
         getChildren,
         getPath,
+        refresh,
       }}
     >
       {children}
