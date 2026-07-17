@@ -15,20 +15,18 @@ export default function MarketingPage() {
   const [campaigns, setCampaigns] = useState<Array<{ id: string; name: string; type: string; status: string; budget: string }>>([]);
   const [campaignsLoading, setCampaignsLoading] = useState(true);
 
-  async function fetchCampaigns() {
-    try {
-      const res = await fetch("/api/campaigns");
-      const json = await res.json();
-      if (json.success) setCampaigns(json.data);
-    } catch (err) {
-      console.error("Failed to fetch campaigns", err);
-    } finally {
-      setCampaignsLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchCampaigns();
+    (async () => {
+      try {
+        const res = await fetch("/api/campaigns");
+        const json = await res.json();
+        if (json.success) setCampaigns(json.data);
+      } catch (err) {
+        console.error("Failed to fetch campaigns", err);
+      } finally {
+        setCampaignsLoading(false);
+      }
+    })();
   }, []);
 
   if (loading || campaignsLoading) {
@@ -61,7 +59,9 @@ export default function MarketingPage() {
       });
       const json = await res.json();
       if (json.success) {
-        await fetchCampaigns();
+        const refresh = await fetch("/api/campaigns");
+        const rj = await refresh.json();
+        if (rj.success) setCampaigns(rj.data);
         setForm({ name: "", type: "email", budget: "" });
         setModalOpen(false);
       }

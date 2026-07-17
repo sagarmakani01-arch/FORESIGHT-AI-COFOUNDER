@@ -40,7 +40,7 @@ async function main() {
     },
   });
 
-  const user2 = await prisma.user.create({
+  const _user2 = await prisma.user.create({
     data: {
       name: "Priya Mehta",
       email: "priya@nexuspay.io",

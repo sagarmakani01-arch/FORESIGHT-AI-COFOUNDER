@@ -44,7 +44,7 @@ interface LeanCanvas {
   revenueStreams: string[];
 }
 
-interface FinancialProjection {
+interface _FinancialProjection {
   year: number;
   revenue: number;
   expenses: number;

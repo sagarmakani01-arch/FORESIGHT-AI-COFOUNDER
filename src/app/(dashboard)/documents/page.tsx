@@ -39,7 +39,8 @@ export default function DocumentsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({ title: "", content: "", folder: "OTHER" });
 
-  const documents = data?.documents || [];
+  const EMPTY_DOCS: Array<never> = [];
+  const documents = data?.documents ?? EMPTY_DOCS;
 
   const folderCounts = useMemo(() => {
     const counts: Record<string, number> = {};

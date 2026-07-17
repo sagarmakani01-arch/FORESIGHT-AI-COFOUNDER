@@ -108,14 +108,13 @@ export default function SearchCommand({ isOpen, onClose }: SearchCommandProps) {
   ];
 
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
-  useEffect(() => {
     if (isOpen) {
-      inputRef.current?.focus();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery("");
       setApiResults([]);
+      requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     }
   }, [isOpen]);
 
@@ -123,25 +122,34 @@ export default function SearchCommand({ isOpen, onClose }: SearchCommandProps) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!query.trim()) {
-      setApiResults([]);
-      setIsLoading(false);
-      return;
+      let cancelled = false;
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setApiResults([]);
+          setIsLoading(false);
+        }
+      });
+      return () => { cancelled = true; };
     }
 
-    setIsLoading(true);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
-        const data = await res.json();
-        setApiResults(data.results || []);
-      } catch {
-        setApiResults([]);
-      } finally {
-        setIsLoading(false);
-      }
+    let cancelled = false;
+    debounceRef.current = setTimeout(() => {
+      (async () => {
+        try {
+          setIsLoading(true);
+          const res = await fetch(`/api/search?q=${encodeURIComponent(query.trim())}`);
+          const data = await res.json();
+          if (!cancelled) setApiResults(data.results || []);
+        } catch {
+          if (!cancelled) setApiResults([]);
+        } finally {
+          if (!cancelled) setIsLoading(false);
+        }
+      })();
     }, 300);
 
     return () => {
+      cancelled = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [query]);

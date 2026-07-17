@@ -40,7 +40,7 @@ export default function SettingsPage() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("profile");
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [companyData, setCompanyData] = useState<CompanyData | null>(null);
+  const [_companyData, setCompanyData] = useState<CompanyData | null>(null);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");

@@ -75,7 +75,7 @@ export default function FinancePage() {
 
   const allMonths = [...new Set([...Object.keys(monthlyRevenueMap), ...Object.keys(monthlyExpenseMap)])].sort();
   const monthlyData = allMonths.map((key) => {
-    const [y, m] = key.split("-");
+    const [, m] = key.split("-");
     return {
       name: monthNames[parseInt(m)],
       revenue: Math.round(monthlyRevenueMap[key] || 0),

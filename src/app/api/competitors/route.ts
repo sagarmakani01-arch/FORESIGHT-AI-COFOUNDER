@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const company = await prisma.company.findUnique({
+    await prisma.company.findUnique({
       where: { id: companyId },
       select: { name: true, industry: true },
     });

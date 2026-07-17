@@ -178,16 +178,20 @@ export function useCompanyData() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    fetch("/api/data")
-      .then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch data");
-        return r.json();
-      })
-      .then(setData)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/data");
+        if (!res.ok) throw new Error("Failed to fetch data");
+        const json = await res.json();
+        if (!cancelled) setData(json);
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : "Unknown error");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [refreshKey]);
 
   function refresh() {

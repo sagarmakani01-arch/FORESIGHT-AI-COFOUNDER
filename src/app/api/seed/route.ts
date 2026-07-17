@@ -71,7 +71,7 @@ export async function POST() {
       }),
     ]);
 
-    const tasks = await Promise.all([
+    const _tasks = await Promise.all([
       prisma.task.create({
         data: {
           title: "Set up CI/CD pipeline",

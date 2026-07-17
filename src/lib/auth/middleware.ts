@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from './config';
-import { UnauthorizedError, ForbiddenError, NotFoundError } from '../errors';
+import { UnauthorizedError, NotFoundError } from '../errors';
 
-export async function getSession(request?: NextRequest) {
+export async function getSession(_request?: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     return session;
@@ -12,16 +12,16 @@ export async function getSession(request?: NextRequest) {
   }
 }
 
-export async function requireAuth(request?: NextRequest) {
-  const session = await getSession(request);
+export async function requireAuth(_request?: NextRequest) {
+  const session = await getSession(_request);
   if (!session?.user) {
     throw new UnauthorizedError('You must be logged in to access this resource');
   }
   return session;
 }
 
-export async function requireCompany(request?: NextRequest) {
-  const session = await requireAuth(request);
+export async function requireCompany(_request?: NextRequest) {
+  const session = await requireAuth(_request);
   const companyId = (session.user as Record<string, unknown>).companyId as string | undefined;
   if (!companyId) {
     throw new NotFoundError('Company');
@@ -29,7 +29,7 @@ export async function requireCompany(request?: NextRequest) {
   return { session, companyId };
 }
 
-export async function getCompanyId(userId: string): Promise<string | null> {
+export async function getCompanyId(_userId: string): Promise<string | null> {
   return null;
 }
 

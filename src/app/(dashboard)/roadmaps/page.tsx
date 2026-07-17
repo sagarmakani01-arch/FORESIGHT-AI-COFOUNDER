@@ -66,10 +66,11 @@ export default function RoadmapsPage() {
     }
   }
 
-  const roadmaps = data?.roadmaps ?? [];
-  const milestones = data?.milestones ?? [];
+  const EMPTY_ARR: Array<never> = [];
+  const roadmaps = data?.roadmaps ?? EMPTY_ARR;
+  const milestones = data?.milestones ?? EMPTY_ARR;
   const roadmap = roadmaps[0];
-  const phases = roadmap?.phases ?? [];
+  const phases = roadmap?.phases ?? EMPTY_ARR;
 
   const kanbanItems = useMemo(() => {
     const items: { id: string; title: string; status: string; priority: string; dueDate: string }[] = [];

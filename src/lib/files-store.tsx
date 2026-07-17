@@ -87,27 +87,31 @@ export function FilesStoreProvider({ children }: { children: ReactNode }) {
   );
   const [loading, setLoading] = useState(true);
 
-  const fetchFiles = useCallback(async () => {
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/files");
+        const json = await res.json();
+        if (json.success) {
+          setNodes(toNodeMap(json.data));
+        }
+      } catch (err) {
+        console.error("Failed to fetch files:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/files");
       const json = await res.json();
-      if (json.success) {
-        setNodes(toNodeMap(json.data));
-      }
+      if (json.success) setNodes(toNodeMap(json.data));
     } catch (err) {
       console.error("Failed to fetch files:", err);
-    } finally {
-      setLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    fetchFiles();
-  }, [fetchFiles]);
-
-  const refresh = useCallback(async () => {
-    await fetchFiles();
-  }, [fetchFiles]);
 
   const toggleFolder = useCallback((id: string) => {
     setExpandedFolders((prev) => {

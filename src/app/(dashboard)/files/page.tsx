@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 function FilesContent() {
-  const { createNode, setSelectedId, selectedId } = useFilesStore();
+  const { createNode, setSelectedId } = useFilesStore();
   const [showNewMenu, setShowNewMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [sidebarWidth] = useState(260);

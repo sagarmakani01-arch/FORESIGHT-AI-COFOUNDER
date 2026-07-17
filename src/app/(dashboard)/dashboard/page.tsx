@@ -7,7 +7,6 @@ import {
   Wallet,
   BarChart3,
   TrendingUp,
-  Clock,
   Rocket,
   MessageSquare,
   Sparkles,
@@ -95,7 +94,7 @@ export default function DashboardPage() {
     );
   }
 
-  const { company: co, projects, tasks, milestones, financeEntries, competitors, documents } = data;
+  const { company: co, tasks, milestones, financeEntries, competitors, documents } = data;
 
   const revenueEntries = (financeEntries ?? []).filter((e) => e.type.toLowerCase() === "revenue");
   const expenseEntries = (financeEntries ?? []).filter((e) => e.type.toLowerCase() === "expense");
@@ -135,7 +134,7 @@ export default function DashboardPage() {
   const allMonths = [...new Set([...Object.keys(monthlyRevenueMap), ...Object.keys(monthlyExpenseMap)])].sort();
   const last7Months = allMonths.slice(-7);
   const growthData = last7Months.map((key) => {
-    const [y, m] = key.split("-");
+    const [, m] = key.split("-");
     return {
       name: monthNames[parseInt(m)],
       revenue: Math.round(monthlyRevenueMap[key] || 0),
@@ -143,7 +142,6 @@ export default function DashboardPage() {
     };
   });
 
-  const keyMetricsCount = co.keyMetrics?.length || 0;
   const merchantsMatch = co.keyMetrics?.find((m: string) => m.toLowerCase().includes("merchant"));
   const merchants = merchantsMatch ? merchantsMatch.replace(/[^0-9]/g, "") : "0";
   const usersMatch = co.keyMetrics?.find((m: string) => m.toLowerCase().includes("active user"));

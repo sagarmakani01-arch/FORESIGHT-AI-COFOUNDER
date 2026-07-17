@@ -3,7 +3,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Plus, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useCompanyData } from "@/lib/hooks";
 import PageHeader from "@/components/shared/page-header";
 import { Modal, FormField, inputClass, SubmitButton } from "@/components/shared/modal";
@@ -24,20 +23,18 @@ export default function HiringPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [positionsLoading, setPositionsLoading] = useState(true);
 
-  async function fetchPositions() {
-    try {
-      const res = await fetch("/api/positions");
-      const json = await res.json();
-      if (json.success) setPositions(json.data);
-    } catch (err) {
-      console.error("Failed to fetch positions", err);
-    } finally {
-      setPositionsLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchPositions();
+    (async () => {
+      try {
+        const res = await fetch("/api/positions");
+        const json = await res.json();
+        if (json.success) setPositions(json.data);
+      } catch (err) {
+        console.error("Failed to fetch positions", err);
+      } finally {
+        setPositionsLoading(false);
+      }
+    })();
   }, []);
 
   async function handleSubmit(e: FormEvent) {
@@ -52,7 +49,9 @@ export default function HiringPage() {
       });
       const json = await res.json();
       if (json.success) {
-        await fetchPositions();
+        const refresh = await fetch("/api/positions");
+        const rj = await refresh.json();
+        if (rj.success) setPositions(rj.data);
         setModalOpen(false);
         setFormTitle("");
         setFormDepartment("");

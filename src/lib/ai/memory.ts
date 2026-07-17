@@ -1,5 +1,4 @@
 import { generateId } from '../utils';
-import { DatabaseError } from '../errors';
 
 export type MemoryType =
   | 'company_facts'

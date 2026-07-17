@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Plus, Calendar, Clock, Users, FileText } from "lucide-react";
+import { Plus, Calendar, Clock, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCompanyData, formatDate } from "@/lib/hooks";
+import { useCompanyData } from "@/lib/hooks";
 import PageHeader from "@/components/shared/page-header";
-import { Modal, FormField, inputClass, selectClass, SubmitButton } from "@/components/shared/modal";
+import { Modal, FormField, inputClass, SubmitButton } from "@/components/shared/modal";
 
 export default function MeetingsPage() {
   const { data, loading } = useCompanyData();
@@ -17,25 +17,23 @@ export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Array<{ id: string; title: string; date: string; attendees: string; notes: string }>>([]);
   const [meetingsLoading, setMeetingsLoading] = useState(true);
 
-  async function fetchMeetings() {
-    try {
-      const res = await fetch("/api/meetings");
-      const json = await res.json();
-      if (json.success) {
-        setMeetings(json.data.map((m: { id: string; title: string; date: string; attendees: string; notes: string; status: string }) => ({
-          ...m,
-          date: m.date,
-        })));
-      }
-    } catch (err) {
-      console.error("Failed to fetch meetings", err);
-    } finally {
-      setMeetingsLoading(false);
-    }
-  }
-
   useEffect(() => {
-    fetchMeetings();
+    (async () => {
+      try {
+        const res = await fetch("/api/meetings");
+        const json = await res.json();
+        if (json.success) {
+          setMeetings(json.data.map((m: { id: string; title: string; date: string; attendees: string; notes: string; status: string }) => ({
+            ...m,
+            date: m.date,
+          })));
+        }
+      } catch (err) {
+        console.error("Failed to fetch meetings", err);
+      } finally {
+        setMeetingsLoading(false);
+      }
+    })();
   }, []);
 
   const milestoneMeetings = useMemo(() => {
@@ -84,7 +82,9 @@ export default function MeetingsPage() {
       });
       const json = await res.json();
       if (json.success) {
-        await fetchMeetings();
+        const refresh = await fetch("/api/meetings");
+        const rj = await refresh.json();
+        if (rj.success) setMeetings(rj.data.map((m: { id: string; title: string; date: string; attendees: string; notes: string; status: string }) => ({ ...m, date: m.date })));
         setForm({ title: "", date: "", attendees: "", notes: "" });
         setModalOpen(false);
       }

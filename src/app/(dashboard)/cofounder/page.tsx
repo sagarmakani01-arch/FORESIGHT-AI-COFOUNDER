@@ -70,8 +70,9 @@ export default function CoFounderPage() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const EMPTY_MESSAGES: Array<never> = [];
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
-  const messages = activeConversation?.messages || [];
+  const messages = activeConversation?.messages ?? EMPTY_MESSAGES;
 
   const userName = data?.user?.name?.split(" ")[0] ?? "there";
   const companyName = data?.company?.name ?? "your company";

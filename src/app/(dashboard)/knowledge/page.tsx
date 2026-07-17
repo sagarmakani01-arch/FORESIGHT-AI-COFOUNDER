@@ -3,7 +3,6 @@
 import { useState, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { Search, BookOpen, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
 import PageHeader from "@/components/shared/page-header";
 import { useCompanyData } from "@/lib/hooks";
 import { Modal, FormField, inputClass, SubmitButton } from "@/components/shared/modal";
